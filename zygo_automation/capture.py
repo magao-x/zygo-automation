@@ -102,7 +102,6 @@ def parse_header(header):
 def read_hdf5(filename, mode='r'):
     '''
     Open a Zygo .datx file via h5py
-    
     '''
 
     return h5py.File(filename, mode)
