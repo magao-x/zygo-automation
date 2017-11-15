@@ -134,7 +134,7 @@ def parse_raw_datx(filename, mask_and_scale=False):
     convert to microns
     '''
     
-    h5file = h5py.File(filename)
+    h5file = h5py.File(filename, 'r')
     
     assert 'Measurement' in list(h5file.keys()), 'No "Measurement" key found. Is this a raw .datx file?' 
     

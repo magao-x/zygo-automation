@@ -67,7 +67,7 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
 
     log.info('Writing to consolidated .hdf5 file.')
     # Consolidate individual frames and inputs
-    alldata = read_many_raw_datx(os.path.join(outname,'frame_*.datx'), mask_and_scale=False)
+    alldata = read_many_raw_datx(glob.glob(os.path.join(outname,'frame_*.datx')), mask_and_scale=False)
     write_dm_run_to_hdf5(os.path.join(outname,'alldata.hdf5'),
                          np.asarray(alldata['surface']),
                          alldata['surface_attrs'][0],
