@@ -49,7 +49,7 @@ def set_pixel(xpix, ypix, value, xdim=32, ydim=32):
     '''
     assert isinstance(xpix, int), 'Pixel coordinates must be integers'
     assert isinstance(ypix, int), 'Pixel coordinates must be integers'
-    assert value >= 0 and value <= 1., 'Value must be between 0 and 1! (I think)'
+    #assert value >= 0 and value <= 1., 'Value must be between 0 and 1! (I think)'
 
     dm_image = np.zeros((ydim, xdim))
     dm_image[ypix, xpix] = value
@@ -61,7 +61,7 @@ def set_row_column(idx, value, dim=0, xdim=32, ydim=32):
     Set a row or column to some value
     '''
     assert isinstance(idx, int), 'Row/column index must be an integer'
-    assert value >= 0 and value <= 1., 'Value must be between 0 and 1! (I think)'
+    #assert value >= 0 and value <= 1., 'Value must be between 0 and 1! (I think)'
 
     dm_image = np.zeros((ydim, xdim))
     if dim == 0:
