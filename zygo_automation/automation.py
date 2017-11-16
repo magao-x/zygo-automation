@@ -4,6 +4,9 @@ import os
 import tempfile
 from time import sleep
 
+import h5py
+import numpy as np
+
 from .capture import capture_frame, read_many_raw_datx
 from .dm import load_channel, set_pixel, set_row_column, write_fits
 
@@ -84,13 +87,16 @@ def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube, 
     
     # surface data and attributes
     surf = f.create_dataset('surface', data=surface_cube)
-    surf.attrs.update(surface_attrs)
+    for k, v in surface_attrs.items(): # attrs.update method crashes python
+        surf.attrs[k] = v
 
     intensity = f.create_dataset('intensity', data=intensity_cube)
-    intensity.attrs.updated(intensity_attrs)
+    for k, v in intensity_attrs.items():
+        intensity.attrs[k] = v
 
     attributes = f.create_group('attributes')
-    attributes.attrs.update(all_attributes)
+    for k, v in all_attributes.items():
+        attributes.attrs[k] = v
 
     dm_inputs = f.create_dataset('dm_inputs', data=dm_inputs)
     dm_inputs.attrs['units'] = 'microns'
