@@ -62,7 +62,7 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
         if not dry_run:
             # Take an image on the Zygo
             log.info('Taking image!')
-            capture_frame(filename=os.path.join(outname,'frame_{}.datx'.format(idx)))
+            capture_frame(filename=os.path.join(outname,'frame_{0:05d}.datx'.format(idx)))
 
         # Remove input file
         if os.path.exists(input_file):
