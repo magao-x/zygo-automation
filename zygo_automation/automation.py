@@ -85,21 +85,31 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
                          )
 
 def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube, intensity_attrs, all_attributes, dm_inputs, mask):
+    '''
+    Write the measured surface, intensity, attributes, and inputs
+    to a single HDF5 file.
+
+    Attempting to write out the Mx dataset attributes (surface, intensity)
+    currently breaks things (Python crashes), so I've disabled that for now.
+    All the information *should* be in the attributes group, but it's
+    not as convenient.
+
+    '''
     # create hdf5 file
     f = h5py.File(filename)
     
     # surface data and attributes
     surf = f.create_dataset('surface', data=surface_cube)
-    surf.attrs.update(surface_attrs)
+    #surf.attrs.update(surface_attrs)
 
     intensity = f.create_dataset('intensity', data=intensity_cube)
-    intensity.attrs.update(intensity_attrs)
+    #intensity.attrs.update(intensity_attrs)
 
     attributes = f.create_group('attributes')
     attributes.attrs.update(all_attributes)
 
     dm_inputs = f.create_dataset('dm_inputs', data=dm_inputs)
-    dm_inputs.attrs['units'] = 'microns'
+    #dm_inputs.attrs['units'] = 'microns'
 
     mask = f.create_dataset('mask', data=mask)
     
