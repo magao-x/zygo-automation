@@ -70,7 +70,10 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
 
     log.info('Writing to consolidated .hdf5 file.')
     # Consolidate individual frames and inputs
-    alldata = read_many_raw_datx(glob.glob(os.path.join(outname,'frame_*.datx')), mask_and_scale=False)
+    # Don't read attributes into a dictionary. This causes python to crash (on Windows)
+    # when re-assignging them to hdf5 attributes.
+    alldata = read_many_raw_datx(glob.glob(os.path.join(outname,'frame_*.datx')), 
+                                 attrs_to_dict=False, mask_and_scale=False)
     write_dm_run_to_hdf5(os.path.join(outname,'alldata.hdf5'),
                          np.asarray(alldata['surface']),
                          alldata['surface_attrs'][0],
@@ -87,16 +90,13 @@ def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube, 
     
     # surface data and attributes
     surf = f.create_dataset('surface', data=surface_cube)
-    for k, v in surface_attrs.items(): # attrs.update method crashes python
-        surf.attrs[k] = v
+    surf.attrs.update(surface_attrs)
 
     intensity = f.create_dataset('intensity', data=intensity_cube)
-    for k, v in intensity_attrs.items():
-        intensity.attrs[k] = v
+    intensity.attrs.update(intensity_attrs)
 
     attributes = f.create_group('attributes')
-    for k, v in all_attributes.items():
-        attributes.attrs[k] = v
+    attributes.attrs.update(all_attributes)
 
     dm_inputs = f.create_dataset('dm_inputs', data=dm_inputs)
     dm_inputs.attrs['units'] = 'microns'

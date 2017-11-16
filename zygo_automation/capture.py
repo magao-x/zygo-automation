@@ -124,7 +124,7 @@ def open_in_Mx(filename):
     '''
     mx.load_data(filename)
 
-def parse_raw_datx(filename, mask_and_scale=False):
+def parse_raw_datx(filename, attrs_to_dict=True, mask_and_scale=False):
     '''
     Given a .datx file containing raw surface measurements,
     return a dictionary of the surface and intensity data,
@@ -140,7 +140,7 @@ def parse_raw_datx(filename, mask_and_scale=False):
     
     # Get surface and attributes
     surface = h5file['Measurement']['Surface'].value
-    surface_attrs = dict(h5file['Measurement']['Surface'].attrs)
+    surface_attrs = h5file['Measurement']['Surface'].attrs
     # Define the mask from the "no data" key
     mask = np.ones_like(surface).astype(bool)
     mask[surface == surface_attrs['No Data']] = 0
@@ -150,11 +150,17 @@ def parse_raw_datx(filename, mask_and_scale=False):
         surface *= surface_attrs['Interferometric Scale Factor'][0] * surface_attrs['Wavelength'] * 1e6
     
     # Get file attributes (overlaps with surface attrs, I believe)
-    attrs = dict(h5file['Measurement']['Attributes'].attrs)
+
+    attrs = h5file['Measurement']['Attributes'].attrs
     
     # Get intensity map
     intensity = h5file['Measurement']['Intensity'].value
-    intensity_attrs = dict(h5file['Measurement']['Intensity'].attrs)
+    intensity_attrs = h5file['Measurement']['Intensity'].attrs
+
+    if attrs_to_dict:
+        surface_attrs = dict(surface_attrs)
+        attrs = dict(attrs)
+        intensity_attrs = dict(intensity_attrs)
     
     return {
         'surface' : surface,
@@ -165,7 +171,7 @@ def parse_raw_datx(filename, mask_and_scale=False):
         'attrs' : attrs 
     }
 
-def read_many_raw_datx(filenames, mask_and_scale=False):
+def read_many_raw_datx(filenames, attrs_to_dict=True, mask_and_scale=False):
     '''
     Simple loop over many .datx files and consolidate into a list
     of surfaces, intensity maps, and attributes 
@@ -179,7 +185,7 @@ def read_many_raw_datx(filenames, mask_and_scale=False):
         'mask' : [],
     }
     for f in filenames:
-        fdict = parse_raw_datx(f, mask_and_scale=mask_and_scale)
+        fdict = parse_raw_datx(f, attrs_to_dict=attrs_to_dict, mask_and_scale=mask_and_scale)
         for k in fdict.keys():
             consolidated[k].append(fdict[k])
     return consolidated
