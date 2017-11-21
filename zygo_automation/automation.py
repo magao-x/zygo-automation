@@ -221,12 +221,12 @@ def mask_inputs(xdim, ydim, value):
     vallist = [-value, value]
     image_list = []
     for val in vallist:
-        im1 = set_row_column(0, val, dim=0, xdim=xdim, ydim=ydim)
-        im2 = set_row_column(-1, val, dim=0, xdim=xdim, ydim=ydim)
-        im3 = set_row_column(0, val, dim=1, xdim=xdim, ydim=ydim)
-        im4 = set_row_column(-1, val, dim=1, xdim=xdim, ydim=ydim)
-        image = im1 + im2 + im3 + im4
-        image_list.append(image)
+        im1 = set_row_column(0, 1, dim=0, xdim=xdim, ydim=ydim)
+        im2 = set_row_column(-1, 1, dim=0, xdim=xdim, ydim=ydim)
+        im3 = set_row_column(0, 1, dim=1, xdim=xdim, ydim=ydim)
+        im4 = set_row_column(-1, 1, dim=1, xdim=xdim, ydim=ydim)
+        image = (im1 + im2 + im3 + im4).astype(bool)
+        image_list.append(image.astype(int) * val)
 
     return image_list
 
