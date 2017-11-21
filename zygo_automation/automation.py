@@ -1,27 +1,17 @@
 from itertools import product
 import glob as glob
 import os
-import tempfile
 from time import sleep
 
 import h5py
 import numpy as np
 
-from .capture import capture_frame, read_many_raw_datx
+from .zygo import capture_frame, read_many_raw_datx
 from .dm import load_channel, set_pixel, set_row_column, write_fits
 
 import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
-
-
-'''
-Expected use:
-* Start DM Monitor on Corona
-* Get Zygo mask, exposure, etc. set up in Mx
-* Call Zygo-DM function to loop through 
-desired DM inputs and take Zygo images
-'''
 
 def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
     '''
