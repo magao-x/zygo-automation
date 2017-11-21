@@ -72,7 +72,7 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
     # Consolidate individual frames and inputs
     # Don't read attributes into a dictionary. This causes python to crash (on Windows)
     # when re-assignging them to hdf5 attributes.
-    alldata = read_many_raw_datx(glob.glob(os.path.join(outname,'frame_*.datx')), 
+    alldata = read_many_raw_datx(sorted(glob.glob(os.path.join(outname,'frame_*.datx'))), 
                                  attrs_to_dict=False, mask_and_scale=False)
     write_dm_run_to_hdf5(os.path.join(outname,'alldata.hdf5'),
                          np.asarray(alldata['surface']),
