@@ -189,6 +189,48 @@ def test_inputs_row_column(num_cols, val, dim=0):
         image_list.append( set_row_column(col, val, dim=dim) )
     return image_list
 
+def mask_inputs(xdim, ydim, value):
+    '''
+    Create the DM inputs necessary for defining
+    a mask in Mx.
+
+    This creates two images in which the edges
+    of the active mirror are set to plus/minus
+    the input value.
+
+    Usage:
+    1. Oversize the mask in Mx, feed the
+    mask_inputs into Zygo_DM_Run.
+    2. Read in the resulting images and 
+    difference them.
+    3. Set the "real" mask to encompass
+    the active part of the DM. 
+
+    Parameters:
+        xdim, ydim : int
+            X, Y dimensions of DM
+        value :
+            Amount by which to push/pull
+            the edge actuators.
+
+    Returns:
+        image_list : list of array-likes
+            Cube of images used to define the mask
+    '''
+
+    vallist = [-value, value]
+    image_list = []
+    for val in vallist:
+        im1 = set_row_column(0, val, dim=0, xdim=xdim, ydim=ydim)
+        im2 = set_row_column(-1, val, dim=0, xdim=xdim, ydim=ydim)
+        im3 = set_row_column(0, val, dim=1, xdim=xdim, ydim=ydim)
+        im4 = set_row_column(-1, val, dim=1, xdim=xdim, ydim=ydim)
+        image = im1 + im2 + im3 + im4
+        image_list.append(image)
+
+    return image_list
+
+
 class FileMonitor(object):
     '''
     Watch a file for modifications at some
