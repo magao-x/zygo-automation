@@ -15,13 +15,32 @@ log = logging.getLogger(__name__)
 
 def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
     '''
-    DMMonitor must be active before
-    executing?
+    Loop over dm_inputs, setting the DM in the requested state,
+    and taking measurements on the Zygo.
+
+    In the outname directory, the individual measurements are
+    saved in separate .datx files. Consolidated measurements
+    (surface maps, intensity maps, attributes, dm inputs) are
+    saved out to 'alldata.hdf5' under this direcotry.
 
     Parameters:
-        dm_inputs: list
-            List of images?
-    Returns:
+        dm_inputs: array-like
+            Cube of displacement images. The DM will iteratively
+            be set in each state on channel 0.
+        network_path : str
+            Path to shared network folder visible to both
+            Corona and the Zygo machine. This is where
+            cross-machine communication will take place.
+            Both machines must have read/write privileges.
+        outname : str
+            Directory to write results out to. Directory
+            must not already exist.
+        dry_run : bool, opt.
+            If toggled to True, this will loop over DM states
+            without taking images. This is useful to debugging
+            things on the DM side / watching the fringes on
+            the Zygo live monitor.
+    Returns: nothing
 
     '''
     if not dry_run:
@@ -74,7 +93,8 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
                          alldata['mask'][0]
                          )
 
-def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube, intensity_attrs, all_attributes, dm_inputs, mask):
+def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube,
+                         intensity_attrs, all_attributes, dm_inputs, mask):
     '''
     Write the measured surface, intensity, attributes, and inputs
     to a single HDF5 file.
@@ -84,7 +104,26 @@ def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube, 
     All the information *should* be in the attributes group, but it's
     not as convenient.
 
+    Parameters:
+        filename: str
+            File to write out consolidate data to
+        surface_cube : nd array
+            Cube of surface images
+         surface_attrs : dict or h5py attributes object
+            Currently not used, but expected.
+         intensity_cube : nd array
+            Cube of intensity images
+        intensity_attrs : dict or h5py attributes object
+            Currently not used, but expected
+        all_attributes : dict or h5py attributes object
+            Mx attributes to associate with the file.
+        dm_inputs : nd array
+            Cube of inputs for the DM
+        mask : nd array
+            2D mask image
+    Returns: nothing
     '''
+
     # create hdf5 file
     f = h5py.File(filename)
     
@@ -106,6 +145,20 @@ def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube, 
     f.close()
 
 def test_inputs_pixel(xpix, ypix, val):
+    '''
+    Generate a list of images looping over
+    every actuator on the DM.
+
+    Parameters:
+        xpix, ypix: ints
+            X and Y dimensions of the DM
+        val : float
+            Value to set each pixel to.
+
+    Returns:
+        image_list : nd array
+            list of (ypix, xpix) nd arrays
+    '''
     pixel_list = product(range(xpix), range(ypix), [val,] )
     image_list = []
     for pix in pixel_list:
@@ -113,6 +166,24 @@ def test_inputs_pixel(xpix, ypix, val):
     return image_list
 
 def test_inputs_row_column(num_cols, val, dim=0):
+    '''
+    Generate a list of images looping over
+    every row/column on the DM.
+
+    Parameters:
+        num_cols: int
+            Number of rows/columns along
+            the axis being looped over
+        val : float
+            Value to set each row/column to.
+        dim : int
+            0 or 1. Loop over X or Y dimension.
+
+    Returns:
+        image_list : nd array
+            list of (ypix, xpix) nd arrays
+    '''
+            
     image_list = []
     for col in range(num_cols):
         image_list.append( set_row_column(col, val, dim=dim) )
@@ -125,6 +196,13 @@ class FileMonitor(object):
     it's modified.  
     '''
     def __init__(self, file_to_watch):
+        '''
+        Parameters:
+            file_to_watch : str
+                Full path to a file to watch for.
+                On detecting a modificiation, do
+                something (self.on_new_data)
+        '''
         self.file = file_to_watch
         self.continue_monitoring = True
 
@@ -133,7 +211,8 @@ class FileMonitor(object):
 
     def watch(self, period=1.):
         '''
-        Pick out new data that have appeared since last query
+        Pick out new data that have appeared since last query.
+        Period given in seconds.
         '''
         try:
             while self.continue_monitoring:
@@ -164,6 +243,7 @@ class FileMonitor(object):
         return last_modified
 
     def on_new_data(self, newdata):
+        ''' Placeholder '''
         pass
 
 class ZygoMonitor(FileMonitor):
@@ -173,9 +253,21 @@ class ZygoMonitor(FileMonitor):
     and proceed with data collection when ready
     '''
     def __init__(self, path):
+        '''
+        Parameters:
+            path : str
+                Network path to watch for 'dm_ready'
+                file indicating the DM is in the
+                requested state.
+        '''
         super().__init__(os.path.join(path,'dm_ready'))
 
     def on_new_data(self, newdata):
+        '''
+        On detecting a new 'dm_ready' file,
+        stop blocking the Zygo code. (No 
+        actual image capture happens here.)
+        '''
         os.remove(newdata) # delete DM ready file
         self.continue_monitoring = False # stop monitor loop
 
@@ -189,9 +281,20 @@ class DMMonitor(FileMonitor):
     when the monitor starts (until it's modified).
     '''
     def __init__(self, path):
+        '''
+        Parameters:
+            path : str
+                Network path to watch for 'dm_input.fits'
+                file.
+        '''
         super().__init__(os.path.join(path,'dm_input.fits'))
 
     def on_new_data(self, newdata):
+        '''
+        On detecting an updated dm_input.fits file,
+        load the image onto the DM and write out an
+        empty 'dm_ready' file to the network path
+        '''
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
         load_channel(newdata, 0)
