@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
+def Zygo_DM_Run(dm_inputs, network_path, outname, delay=None, dry_run=False):
     '''
     Loop over dm_inputs, setting the DM in the requested state,
     and taking measurements on the Zygo.
@@ -35,6 +35,9 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
         outname : str
             Directory to write results out to. Directory
             must not already exist.
+        delay : float
+            Time in seconds to wait between measurements.
+            Default: no delay.
         dry_run : bool, opt.
             If toggled to True, this will loop over DM states
             without taking images. This is useful to debugging
@@ -76,6 +79,9 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, dry_run=False):
         # Remove input file
         if os.path.exists(input_file):
             os.remove(input_file)
+
+        if delay is not None:
+            sleep(delay)
 
     log.info('Writing to consolidated .hdf5 file.')
     # Consolidate individual frames and inputs
