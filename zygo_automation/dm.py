@@ -47,6 +47,13 @@ def clear_channel(channel):
     subprocess.call(['sh', 'dmzeroch', str(channel)],
                      cwd=script_path)
 
+def dm_shutoff():
+    '''
+    Shut off the DM with the dmoff command.
+    '''
+    script_path = '/home/lab/src/scripts'
+    subprocess.call(['sh', 'dmoff'], cwd=script_path)
+
 def set_pixel(xpix, ypix, value, xdim=32, ydim=32):
     '''
     Set a single DM actuator to some value.
