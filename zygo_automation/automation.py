@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def Zygo_DM_Run(dm_inputs, network_path, outname, delay=None, dry_run=False):
+def Zygo_DM_Run(dm_inputs, network_path, outname, delay=None, consolidate=True, dry_run=False):
     '''
     Loop over dm_inputs, setting the DM in the requested state,
     and taking measurements on the Zygo.
@@ -35,9 +35,12 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, delay=None, dry_run=False):
         outname : str
             Directory to write results out to. Directory
             must not already exist.
-        delay : float
+        delay : float, opt.
             Time in seconds to wait between measurements.
             Default: no delay.
+        consolidate : bool, opt.
+            Attempt to consolidate all files at the end?
+            Default: True
         dry_run : bool, opt.
             If toggled to True, this will loop over DM states
             without taking images. This is useful to debugging
@@ -83,21 +86,22 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, delay=None, dry_run=False):
         if delay is not None:
             sleep(delay)
 
-    log.info('Writing to consolidated .hdf5 file.')
-    # Consolidate individual frames and inputs
-    # Don't read attributes into a dictionary. This causes python to crash (on Windows)
-    # when re-assignging them to hdf5 attributes.
-    alldata = read_many_raw_datx(sorted(glob.glob(os.path.join(outname,'frame_*.datx'))), 
-                                 attrs_to_dict=False, mask_and_scale=False)
-    write_dm_run_to_hdf5(os.path.join(outname,'alldata.hdf5'),
-                         np.asarray(alldata['surface']),
-                         alldata['surface_attrs'][0],
-                         np.asarray(alldata['intensity']),
-                         alldata['intensity_attrs'][0],
-                         alldata['attrs'][0],
-                         np.asarray(dm_inputs),
-                         alldata['mask'][0]
-                         )
+    if consolidate:
+        log.info('Writing to consolidated .hdf5 file.')
+        # Consolidate individual frames and inputs
+        # Don't read attributes into a dictionary. This causes python to crash (on Windows)
+        # when re-assignging them to hdf5 attributes.
+        alldata = read_many_raw_datx(sorted(glob.glob(os.path.join(outname,'frame_*.datx'))), 
+                                     attrs_to_dict=False, mask_and_scale=False)
+        write_dm_run_to_hdf5(os.path.join(outname,'alldata.hdf5'),
+                             np.asarray(alldata['surface']),
+                             alldata['surface_attrs'][0],
+                             np.asarray(alldata['intensity']),
+                             alldata['intensity_attrs'][0],
+                             alldata['attrs'][0],
+                             np.asarray(dm_inputs),
+                             alldata['mask'][0]
+                             )
 
 def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube,
                          intensity_attrs, all_attributes, dm_inputs, mask):
