@@ -142,6 +142,8 @@ def parse_raw_datx(filename, attrs_to_dict=True, mask_and_scale=False):
         surface_attrs = dict(surface_attrs)
         attrs = dict(attrs)
         intensity_attrs = dict(intensity_attrs)
+
+    h5file.close()
     
     return {
         'surface' : surface,
