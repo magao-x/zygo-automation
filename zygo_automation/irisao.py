@@ -12,13 +12,16 @@ import csv
 import subprocess
 import numpy as np
 
-def apply_ptt_command(pttlist, outpath, mserial='PWA37-05-04-0404', dserial='09150004',
-                      script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False,):
+def apply_ptt_command(pttfile, mserial='PWA37-05-04-0404', dserial='09150004',
+                      script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False):
+    '''
+    Apply a PTT command to the IrisAO from a .txt file.
+    '''
     # write ptt command to file
-    write_ptt_command(pttlist, outpath)
+    #write_ptt_command(pttlist, outpath)
 
     # run Alex's C code (needs to have root privileges...)
-    subprocess.call(['sh', 'SendPTT', mserial, dserial, int(hardware_disable), outpath],
+    subprocess.call(['sh', 'SendPTT', mserial, dserial, int(hardware_disable), pttfile],
                      cwd=script_path)
 
 def release_mirror(script_path='/home/lab/IrisAO/SourceCodes'):
@@ -31,6 +34,11 @@ def build_global_zmode():
     just want to use IrisAO's prebuilt global modes.
     '''
     pass
+
+def command_segment(n, nsegments=37, piston=0., tip=0., tilt=0.):
+    command = [piston, tip, tilt]
+
+    
 
 def build_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
     '''
@@ -95,4 +103,49 @@ def read_ptt_command(filename):
         reader = csv.reader(f, delimiter=' ', quoting=csv.QUOTE_NONNUMERIC)
         pttlist = [line for line in reader]
     return pttlist
+
+def twitch_individual_segments(nsegments, ptt=None):
+    '''
+    Sequentially twitch each individual segments with some
+    value(s) of piston/tip/tilt.
+
+    Parameters:
+        nsegments : int
+            Number of segments
+        ptt : tuple, optional.
+            If none. Defaults to (0., 1., 0.) -- that is,
+            tip each segment. Otherwise, can be set to
+            apply some combination of PPT: (piston, tip, tilt).
+    Returns:
+        inputlist : list
+            List of PTT commands that can be iteratively applied
+            to the mirror.
+    '''
+    if ptt is None:
+        ptt = [0., 1., 0.]
+
+    restcommand = build_ptt_command(nsegments)
+
+    inputlist = []
+    for n in range(nsegments):
+        curcommand = restcommand.copy()
+        curcommand[n] = ptt
+        inputlist.append(curcommand)
+
+    return inputlist
+
+def test_segment_range(nsegments, n, ptt=0, minval=-1., maxval=1., nval=10.):
+    '''
+
+    '''
+
+    vals = np.linspace(minval, maxval, num=nval, endpoint=True)
+
+    for v in vals:
+
+        build_ptt_command(nsegments)
+
+
+
+
 
