@@ -39,7 +39,7 @@ def capture_frame(filename=None):
     sense, since these things have to be determined interactively
     anyway.
     '''
-    log.info('Mx: capturing fram and acquiring from camera.')
+    log.info('Mx: capturing frame and acquiring from camera.')
     instrument.measure()
     instrument.acquire()
 
