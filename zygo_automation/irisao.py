@@ -36,11 +36,29 @@ def build_global_zmode():
     pass
 
 def command_segment(n, nsegments=37, piston=0., tip=0., tilt=0.):
-    command = [piston, tip, tilt]
+    '''
+    Convenience function to allow commanding a single segment
+    with some set of PTT values.
 
-    
+    Parameters:
+        n : int
+            Which segment to command?
+        nsegments : int
+            Total number of segments in the IrisAO DM
+        piston : float
+            Value in microns
+        tip : float
+            Value in mrad
+        tilt : float
+            Value in mrad
+    '''
+    segcommand = [piston, tip, tilt]
+    globalcommand = build_global_ptt_command(nsegments)
+    globalcommand[n] = segcommand
+    return globalcommand
 
-def build_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
+
+def build_global_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
     '''
     Build a nsegment-length list of lists containing the [piston, tip, tilt]
     commands to send to each segment of the IrisAO DM.
@@ -56,11 +74,21 @@ def build_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
     DM with not PTT applied.
 
     Parameters:
-
-
+        nsegments : int
+            Number of segments in the IrisAO
+        piston : float or list
+            Value in microns. If a float, will be applied
+            globally. If a list, each segment gets a unique
+            value
+        tip : float or list
+            Value in mrad. See note above.
+        tilt : float or list
+            Value if mrad. See note above.
     Returns:
-
-
+        pttlist : list of lists
+            An nsegment-length list, each element of which
+            is a 3-element list with the piston, tip,
+            tilt commands to be applied.
     '''
     pttlist = [[0.,0.,0.] for i in range(nsegments)]
 
@@ -124,7 +152,7 @@ def twitch_individual_segments(nsegments, ptt=None):
     if ptt is None:
         ptt = [0., 1., 0.]
 
-    restcommand = build_ptt_command(nsegments)
+    restcommand = build_global_ptt_command(nsegments)
 
     inputlist = []
     for n in range(nsegments):
@@ -134,18 +162,34 @@ def twitch_individual_segments(nsegments, ptt=None):
 
     return inputlist
 
-def test_segment_range(nsegments, n, ptt=0, minval=-1., maxval=1., nval=10.):
+def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=1., nval=10.):
     '''
+    Generate the input list that will sequentially apply a PTT mode from minval to
+    maxval in nval steps.
 
+    Parameters:
+        n : int
+            Which segment?
+        nsegments : int, optional
+            Total number of segments in the aperture
+        mtype : str
+            'piston', 'tip', or 'tilt'
+        minval : float
+            Minimum value to test
+        maxval : float
+            Maximum value to test
+        nval : int
+            Number of values between minval and maxval to test.
+            Inclusive on both sides of range. 
+
+    Returns:
+        inputlist : list
+            List of inputs to apply to IrisAO for the requested
+            behavior.
     '''
-
+    inputlist = []
     vals = np.linspace(minval, maxval, num=nval, endpoint=True)
-
     for v in vals:
-
-        build_ptt_command(nsegments)
-
-
-
-
+        inputlist.append(command_segment(n, nsegments=nsegments, **{mtype : v}))
+    return inputlist
 
