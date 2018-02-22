@@ -70,7 +70,7 @@ def build_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
             ptt[1] = tip
     elif isinstance(tip, (list, tuple, np.ndarray)) and len(tip) == nsegments:
         for ptt, t in zip(pttlist, tip):
-            ptt[0] = t
+            ptt[1] = t
     else:
         raise TypeError('tip is neither a float nor an array-like with length {}!'.format(nsegments))
 
@@ -79,7 +79,7 @@ def build_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
             ptt[2] = tilt
     elif isinstance(tilt, (list, tuple, np.ndarray)) and len(tilt) == nsegments:
         for ptt, t in zip(pttlist, tilt):
-            ptt[0] = t
+            ptt[2] = t
     else:
         raise TypeError('tilt is neither a float nor an array-like with length {}!'.format(nsegments))
 
