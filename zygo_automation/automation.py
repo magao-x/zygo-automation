@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def Zygo_DM_Run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False):
+def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False):
     '''
     Loop over dm_inputs, setting the DM in the requested state,
     and taking measurements on the Zygo.
@@ -293,7 +293,7 @@ class IrisAOMonitor(FileMonitor):
         '''
         Parameters:
             path : str
-                Network path to watch for 'dm_input.fits'
+                Network path to watch for 'ptt_input.txt'
                 file.
         '''
         super().__init__(os.path.join(path, input_file))
