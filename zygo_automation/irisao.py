@@ -1,13 +1,3 @@
-'''
-IrisAO helper functions go here
-
-
-Functions needs:
-- Command individual segment with PTT
-- Global segment commands
-- Mirror release
-- Apply IrisAO flat
-'''
 import csv
 import subprocess
 import numpy as np
@@ -16,17 +6,36 @@ def apply_ptt_command(pttfile, mserial='PWA37-05-04-0404', dserial='09150004',
                       script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False):
     '''
     Apply a PTT command to the IrisAO from a .txt file.
-    '''
-    # write ptt command to file
-    #write_ptt_command(pttlist, outpath)
+    
+    Parameters:
+        pttfile : str
+            Path to .txt file. Expected format is a file with nsegment
+            lines, each line of which is a space-delimited list of 
+            piston, tip, tilt coeffcients. (micron, mrad, mrad)
+        mserial : str
+            Mirror serial number
+        dserial : str
+            Driver serial number
+        script_path : str
+            Path to IrisAO scripts.
+        hardware_disable : bool
+            Disable the hardware? Toggle to True for dry runs.
 
+    Returns: nothing
+    '''
     # run Alex's C code (needs to have root privileges...)
     subprocess.call(['sh', 'SendPTT', mserial, dserial, int(hardware_disable), pttfile],
                      cwd=script_path)
 
-def release_mirror(script_path='/home/lab/IrisAO/SourceCodes'):
+def release_mirror(mserial='PWA37-05-04-0404', dserial='09150004',
+                   script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False):
     # run Alex's C code (needs to have root privileges...)
-    subprocess.call(['sh', 'Release'], cwd=script_path)
+    subprocess.call(['sh', 'Release', mserial, dserial], cwd=script_path)
+
+def flatten_mirror(mserial='PWA37-05-04-0404', dserial='09150004',
+                   script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False):
+    # run Alex's C code (needs to have root privileges...)
+    subprocess.call(['sh', 'Flatten2', mserial, dserial], cwd=script_path)
 
 def build_global_zmode():
     '''
@@ -56,7 +65,6 @@ def command_segment(n, nsegments=37, piston=0., tip=0., tilt=0.):
     globalcommand = build_global_ptt_command(nsegments)
     globalcommand[n] = segcommand
     return globalcommand
-
 
 def build_global_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
     '''
@@ -192,4 +200,3 @@ def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=
     for v in vals:
         inputlist.append(command_segment(n, nsegments=nsegments, **{mtype : v}))
     return inputlist
-
