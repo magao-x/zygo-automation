@@ -24,18 +24,18 @@ def apply_ptt_command(pttfile, mserial='PWA37-05-04-0404', dserial='09150004',
     Returns: nothing
     '''
     # run Alex's C code (needs to have root privileges...)
-    subprocess.call(['sh', 'SendPTT', mserial, dserial, str(int(hardware_disable)), pttfile],
+    subprocess.call(['./SendPTT', mserial, dserial, str(int(hardware_disable)), pttfile],
                      cwd=script_path)
 
 def release_mirror(mserial='PWA37-05-04-0404', dserial='09150004',
                    script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False):
     # run Alex's C code (needs to have root privileges...)
-    subprocess.call(['sh', 'Release', mserial, dserial], cwd=script_path)
+    subprocess.call(['./Release', mserial, dserial], cwd=script_path)
 
 def flatten_mirror(mserial='PWA37-05-04-0404', dserial='09150004',
                    script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False):
     # run Alex's C code (needs to have root privileges...)
-    subprocess.call(['sh', 'Flatten2', mserial, dserial], cwd=script_path)
+    subprocess.call(['./Flatten2', mserial, dserial], cwd=script_path)
 
 def build_global_zmode():
     '''
