@@ -24,7 +24,7 @@ def apply_ptt_command(pttfile, mserial='PWA37-05-04-0404', dserial='09150004',
     Returns: nothing
     '''
     # run Alex's C code (needs to have root privileges...)
-    subprocess.call(['sh', 'SendPTT', mserial, dserial, int(hardware_disable), pttfile],
+    subprocess.call(['sh', 'SendPTT', mserial, dserial, str(int(hardware_disable)), pttfile],
                      cwd=script_path)
 
 def release_mirror(mserial='PWA37-05-04-0404', dserial='09150004',
