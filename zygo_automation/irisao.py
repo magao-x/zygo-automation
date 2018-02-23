@@ -6,7 +6,7 @@ def apply_ptt_command(pttfile, mserial='PWA37-05-04-0404', dserial='09150004',
                       script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False):
     '''
     Apply a PTT command to the IrisAO from a .txt file.
-    
+
     Parameters:
         pttfile : str
             Path to .txt file. Expected format is a file with nsegment
@@ -44,7 +44,7 @@ def build_global_zmode():
     '''
     pass
 
-def command_segment(n, nsegments=37, piston=0., tip=0., tilt=0.):
+def build_segment_command(n, nsegments=37, piston=0., tip=0., tilt=0.):
     '''
     Convenience function to allow commanding a single segment
     with some set of PTT values.
@@ -79,7 +79,7 @@ def build_global_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
     they'll be applied to the segments individually.
 
     If no arguments are given, will build the PTT list for a 37-segment
-    DM with not PTT applied.
+    DM with no PTT applied.
 
     Parameters:
         nsegments : int
@@ -142,16 +142,16 @@ def read_ptt_command(filename):
 
 def twitch_individual_segments(nsegments, ptt=None):
     '''
-    Sequentially twitch each individual segments with some
+    Sequentially twitch each individual segment with some
     value(s) of piston/tip/tilt.
 
     Parameters:
         nsegments : int
             Number of segments
         ptt : tuple, optional.
-            If none. Defaults to (0., 1., 0.) -- that is,
+            If none. Defaults to [0., 1., 0.] -- that is,
             tip each segment. Otherwise, can be set to
-            apply some combination of PPT: (piston, tip, tilt).
+            apply some combination of [piston, tip, tilt].
     Returns:
         inputlist : list
             List of PTT commands that can be iteratively applied
@@ -177,7 +177,7 @@ def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=
 
     Parameters:
         n : int
-            Which segment?
+            Which segment to test?
         nsegments : int, optional
             Total number of segments in the aperture
         mtype : str
@@ -198,5 +198,5 @@ def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=
     inputlist = []
     vals = np.linspace(minval, maxval, num=nval, endpoint=True)
     for v in vals:
-        inputlist.append(command_segment(n, nsegments=nsegments, **{mtype : v}))
+        inputlist.append(build_segment_command(n, nsegments=nsegments, **{mtype : v}))
     return inputlist
