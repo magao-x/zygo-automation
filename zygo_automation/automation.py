@@ -6,7 +6,7 @@ import h5py
 import numpy as np
 
 from .zygo import capture_frame, read_many_raw_datx
-from .bmc import load_channel, set_pixel, set_row_column, write_fits
+from .bmc import load_channel, write_fits
 from .irisao import write_ptt_command
 
 import logging
