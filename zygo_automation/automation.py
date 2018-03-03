@@ -7,7 +7,7 @@ import numpy as np
 
 from .zygo import capture_frame, read_many_raw_datx
 from .bmc import load_channel, write_fits
-from .irisao import write_ptt_command
+from .irisao import write_ptt_command, apply_ptt_command
 
 import logging
 logging.basicConfig(level=logging.INFO)
