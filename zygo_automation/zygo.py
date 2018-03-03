@@ -40,7 +40,6 @@ def capture_frame(filename=None):
     anyway.
     '''
     log.info('Mx: capturing frame and acquiring from camera.')
-    instrument.measure()
     instrument.acquire()
 
     if filename is not None:

@@ -60,6 +60,8 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
         assert not os.path.exists(outname), '{} already exists!'.format(outname)
         os.mkdir(outname)
 
+    zm = ZygoMonitor(network_path)
+
     for idx, inputs in enumerate(dm_inputs):
 
         if dmtype.upper() == 'BMC':
@@ -80,8 +82,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
         # I'm a little worried the DM could get there before
         # the monitor starts watching the dm_ready file, but 
         # that hasn't happened yet.
-        zm = ZygoMonitor(network_path)
-        zm.watch(0.1)
+        zm.watch(0.01)
         log.info('DM ready!')
 
         if not dry_run:
@@ -190,6 +191,7 @@ class FileMonitor(object):
         Pick out new data that have appeared since last query.
         Period given in seconds.
         '''
+        self.continue_monitoring = True
         try:
             while self.continue_monitoring:
                 # Check the file
