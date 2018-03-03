@@ -52,7 +52,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
     Returns: nothing
 
     '''
-    if dmtype.upper() != 'BMC' or dmtype.upper() != 'IRISAO':
+    if dmtype.upper() not in ['BMC','IRISAO']:
         raise ValueError('dmtype not recognized. Must be either "BMC" or "IRISAO".')
 
     if not dry_run:
@@ -74,7 +74,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
             write_fits(input_file, inputs, overwrite=True)
         else: #IRISAO
             input_file = os.path.join(network_path,'ptt_input.txt'.format(idx))
-            write_ptt_command(inputs, outname)
+            write_ptt_command(inputs, input_file)
 
         # Wait until DM indicates it's in the requested state
         # I'm a little worried the DM could get there before
