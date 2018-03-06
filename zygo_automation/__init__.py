@@ -1,1 +1,1 @@
-from . import automation, zygo, bmc, irisao
+from . import analysis, automation, bmc, irisao, zygo

@@ -2,6 +2,8 @@ import csv
 import subprocess
 import numpy as np
 
+from scipy.ndimage import label
+
 def apply_ptt_command(pttfile, mserial='PWA37-05-04-0404', dserial='09150004',
                       script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False):
     '''
@@ -228,3 +230,69 @@ def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=
     for v in vals:
         inputlist.append(build_segment_command(n, nsegments=nsegments, **{mtype : v}))
     return inputlist
+
+
+def z_to_xgrad(zcoeff, segdiam=1.212):
+    '''
+    Assuming Noll-normalized Zernikes.
+    The conversion to fringe (value at edge
+    of aperture for tip/tilt is *2).
+
+    Then additional factor of 2 to get
+    full range over segment.
+
+    Returns gradient (mrad)
+    '''
+    return (zcoeff * 4.) / (segdiam * 1e3) * 1e3
+
+
+def z_to_ygrad(zcoeff, segdiam=1.4):
+    '''
+    Assuming fringe Zernike normalization, where
+    the coefficient value is the maximum value at
+    the edge of the segment (microns)
+
+    Returns gradient (mrad)
+    '''
+    return (zcoeff * 4.) / (segdiam * 1e3) * 1e3
+
+
+def planeslope_to_grad(slope, pixscale=0.017):
+    '''
+    Given a slope in microns/pix, return it in
+    mrad (microns / mm)
+
+    pixscale : mm / pixel
+    slope : microns / pix
+    '''
+    return slope / (pixscale * 1000.) * 1000.
+
+
+def zcoeffs_to_command(ptt):
+    return [ptt[0], -z_to_xgrad(ptt[2]), -z_to_xgrad(ptt[1])]
+
+
+def planecoeffs_to_command(ptt):
+    return [ptt[0], -planeslope_to_grad(ptt[2]), -planeslope_to_grad(ptt[1])]
+
+
+def segment_mapping(segments):
+    shape = segments.shape
+    ceny, cenx = ((shape[0] - 1) / 2., (shape[1] - 1) / 2.)
+    centroids = np.asarray(com(segments > 0, labels=segments, index=np.unique(segments)[1:]))
+
+    xcen = centroids[:, 1]
+    column = np.digitize(xcen, np.linspace(xcen.min() - 10., xcen.max() + 10., num=8, endpoint=True), right=True)
+    sort = np.lexsort([centroids[:, 0], column])
+
+    irisao_mapping = [23, 24, 25, 26, 22, 10, 11, 12, 27, 21, 9, 3, 4, 13, 28, 20, 8, 2, 1,
+                      5, 14, 29, 37, 19, 7, 6, 15, 30, 36, 18, 17, 16, 31, 35, 34, 33, 32]
+
+    newlabel = np.zeros_like(segments)
+    for idx, segid in enumerate(np.unique(segments)[1:][sort]):
+        newlabel[segments == segid] = irisao_mapping[idx]
+
+    return newlabel
+
+
+
