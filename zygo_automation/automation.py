@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False):
+def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False):
     '''
     Loop over dm_inputs, setting the DM in the requested state,
     and taking measurements on the Zygo.
@@ -49,13 +49,17 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
             without taking images. This is useful to debugging
             things on the DM side / watching the fringes on
             the Zygo live monitor.
+        clobber : bool, opt.
+            Allow writing to directory that already exists?
+            Risks overwriting files that already exist, but
+            useful for interactive measurements.
     Returns: nothing
 
     '''
     if dmtype.upper() not in ['BMC','IRISAO']:
         raise ValueError('dmtype not recognized. Must be either "BMC" or "IRISAO".')
 
-    if not dry_run:
+    if not (dry_run or clobber):
         # Create a new directory outname to save results to
         assert not os.path.exists(outname), '{} already exists!'.format(outname)
         os.mkdir(outname)
