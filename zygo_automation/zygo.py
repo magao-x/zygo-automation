@@ -19,7 +19,7 @@ try:
 except ImportError:
     log.warning('Could not load Zygo Python library! Functionality will be severely crippled.')
 
-def capture_frame(filename=None):
+def capture_frame(filename=None, mtype='acquire'):
     '''
     Capture an image on the Zygo via Mx.
 
@@ -29,6 +29,11 @@ def capture_frame(filename=None):
             capture the image and load it into the interface
             but it's up to the user to use the GUI to save
             it out.
+        mtype : str
+            'acquire' or 'measure'. 'Acquire' takes a measurement
+            without analyzing or updating the GUI (faster), while
+            'measure' takes a measurement, analyzes, and updates
+            the GUI (slower).
 
     The output is a .datx file that includes the raw surface 
     (no Zernike modes removed, even if selected in Mx), intensity,
@@ -40,7 +45,12 @@ def capture_frame(filename=None):
     anyway.
     '''
     log.info('Mx: capturing frame and acquiring from camera.')
-    instrument.acquire()
+    if mtype.upper() == 'ACQUIRE':
+        instrument.acquire()
+    elif mtype.upper() == 'MEASURE':
+        instrument.measure()
+    else:
+        raise ValueError('Measurement type not understood!')
 
     if filename is not None:
         log.info('Mx: writing out to {}'.format(filename))
