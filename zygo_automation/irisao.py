@@ -37,14 +37,7 @@ def flatten_mirror(mserial='PWA37-05-04-0404', dserial='09150004',
     # run Alex's C code (needs to have root privileges...)
     subprocess.call(['sudo', './Flatten2', mserial, dserial], cwd=script_path)
 
-def build_global_zmode():
-    '''
-    Magic happens here. I don't even know if I want to do this, or if I
-    just want to use IrisAO's prebuilt global modes.
-    '''
-    pass
-
-def build_segment_command(n, nsegments=37, piston=0., tip=0., tilt=0.):
+def build_segment_command(n, nsegments=37, piston=0., tip=0., tilt=0., addto=None):
     '''
     Convenience function to allow commanding a single segment
     with some set of PTT values.
@@ -60,13 +53,28 @@ def build_segment_command(n, nsegments=37, piston=0., tip=0., tilt=0.):
             Value in mrad
         tilt : float
             Value in mrad
+        addto : str or list, opt.
+            Command to stack the one being built on 
+            top of. Normally, this will be a flat.
+            Can be either a filepath or a list of
+            PTT commands.
     '''
     segcommand = [piston, tip, tilt]
     globalcommand = build_global_ptt_command(nsegments)
     globalcommand[n] = segcommand
-    return globalcommand
 
-def build_global_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
+    if addto is not None:
+        if isinstance(addto, str):
+            stackwith = read_ptt_command(addto)
+        elif isinstance(addto, (list, np.ndarray)):
+            stackwith = addto
+        else:
+            raise TypeError('addto type not recognized. Must be string or list-like.')
+        return stack_commands(globalcommand, stackwith)
+    else:
+        return globalcommand
+
+def build_global_ptt_command(nsegments=37, piston=0., tip=0., tilt=0., addto=None):
     '''
     Build a nsegment-length list of lists containing the [piston, tip, tilt]
     commands to send to each segment of the IrisAO DM.
@@ -92,6 +100,11 @@ def build_global_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
             Value in mrad. See note above.
         tilt : float or list
             Value if mrad. See note above.
+        addto : str or list, opt.
+            Command to stack the one being built on 
+            top of. Normally, this will be a flat.
+            Can be either a filepath or a list of
+            PTT commands.
     Returns:
         pttlist : list of lists
             An nsegment-length list, each element of which
@@ -127,7 +140,22 @@ def build_global_ptt_command(nsegments=37, piston=0., tip=0., tilt=0.):
     else:
         raise TypeError('tilt is neither a float nor an array-like with length {}!'.format(nsegments))
 
-    return pttlist
+    if addto is not None:
+        if isinstance(addto, str):
+            stackwith = read_ptt_command(addto)
+        elif isinstance(addto, (list, np.ndarray)):
+            stackwith = addto
+        else:
+            raise TypeError('addto type not recognized. Must be string or list-like.')
+        return stack_commands(pttlist, stackwith)
+    else:
+        return pttlist
+
+def stack_commands(pttlist1, pttlist2):
+    return [(c1[0] + c2[0],
+             c1[1] + c2[1],
+             c1[2] + c2[2])
+             for c1, c2 in zip(pttlist1,pttlist2)]
 
 def write_ptt_command(pttlist, outname):
     with open(outname, 'w+') as f:
