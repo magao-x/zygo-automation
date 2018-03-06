@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False):
+def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False, mtype='acquire'):
     '''
     Loop over dm_inputs, setting the DM in the requested state,
     and taking measurements on the Zygo.
@@ -53,6 +53,11 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
             Allow writing to directory that already exists?
             Risks overwriting files that already exist, but
             useful for interactive measurements.
+        mtype : str
+            'acquire' or 'measure'. 'Acquire' takes a measurement
+            without analyzing or updating the GUI (faster), while
+            'measure' takes a measurement, analyzes, and updates
+            the GUI (slower).
     Returns: nothing
 
     '''
@@ -92,7 +97,8 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
         if not dry_run:
             # Take an image on the Zygo
             log.info('Taking image!')
-            capture_frame(filename=os.path.join(outname,'frame_{0:05d}.datx'.format(idx)))
+            capture_frame(filename=os.path.join(outname,'frame_{0:05d}.datx'.format(idx)),
+                          mtype=mtype)
 
         # Remove input file
         if os.path.exists(input_file):
