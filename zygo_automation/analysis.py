@@ -1,6 +1,8 @@
 import numpy as np
 import poppy
 
+from scipy.optimize import leastsq
+
 def rms(image,mask=None):
     return np.sqrt(np.mean(image[mask]**2))
 
@@ -11,8 +13,9 @@ def plane_error(params, indices, image, mask):
     delta = plane(indices,*params) - image
     return delta[mask].flatten()
 
-def fit_plane(image, mask=None):
-    indices = np.indices(image.shape)
+def fit_plane(image, mask=None, indices=None):
+    if indices is None:
+        indices = np.indices(image.shape)
     return leastsq(plane_error, [0.,0.,0.], args=(indices, image, mask))[0]
 
 def fit_ptt(image, aperture):

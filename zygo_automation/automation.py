@@ -113,7 +113,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
         # Don't read attributes into a dictionary. This causes python to crash (on Windows)
         # when re-assignging them to hdf5 attributes.
         alldata = read_many_raw_datx(sorted(glob.glob(os.path.join(outname,'frame_*.datx'))), 
-                                     attrs_to_dict=False, mask_and_scale=False)
+                                     attrs_to_dict=True, mask_and_scale=True)
         write_dm_run_to_hdf5(os.path.join(outname,'alldata.hdf5'),
                              np.asarray(alldata['surface']),
                              alldata['surface_attrs'][0],
@@ -156,7 +156,7 @@ def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube,
     '''
 
     # create hdf5 file
-    f = h5py.File(filename)
+    f = h5py.File(filename, 'w')
     
     # surface data and attributes
     surf = f.create_dataset('surface', data=surface_cube)

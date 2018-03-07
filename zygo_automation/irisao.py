@@ -3,6 +3,9 @@ import subprocess
 import numpy as np
 
 from scipy.ndimage import label
+from scipy.ndimage.measurements import center_of_mass as com
+
+from . import analysis
 
 def apply_ptt_command(pttfile, mserial='PWA37-05-04-0404', dserial='09150004',
                       script_path='/home/lab/IrisAO/SourceCodes', hardware_disable=False):
@@ -154,9 +157,9 @@ def build_global_ptt_command(nsegments=37, piston=0., tip=0., tilt=0., addto=Non
         return pttlist
 
 def stack_commands(pttlist1, pttlist2):
-    return [(c1[0] + c2[0],
+    return [[c1[0] + c2[0],
              c1[1] + c2[1],
-             c1[2] + c2[2])
+             c1[2] + c2[2]]
              for c1, c2 in zip(pttlist1,pttlist2)]
 
 def write_ptt_command(pttlist, outname):
@@ -167,7 +170,7 @@ def write_ptt_command(pttlist, outname):
 def read_ptt_command(filename):
     with open(filename, 'r') as f:
         reader = csv.reader(f, delimiter=' ', quoting=csv.QUOTE_NONNUMERIC)
-        pttlist = [line for line in reader]
+        pttlist = [line[:3] for line in reader] # sometimes there's a trailing space
     return pttlist
 
 def twitch_individual_segments(nsegments, ptt=None):
@@ -231,7 +234,6 @@ def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=
         inputlist.append(build_segment_command(n, nsegments=nsegments, **{mtype : v}))
     return inputlist
 
-
 def z_to_xgrad(zcoeff, segdiam=1.212):
     '''
     Assuming Noll-normalized Zernikes.
@@ -245,7 +247,6 @@ def z_to_xgrad(zcoeff, segdiam=1.212):
     '''
     return (zcoeff * 4.) / (segdiam * 1e3) * 1e3
 
-
 def z_to_ygrad(zcoeff, segdiam=1.4):
     '''
     Assuming fringe Zernike normalization, where
@@ -255,7 +256,6 @@ def z_to_ygrad(zcoeff, segdiam=1.4):
     Returns gradient (mrad)
     '''
     return (zcoeff * 4.) / (segdiam * 1e3) * 1e3
-
 
 def planeslope_to_grad(slope, pixscale=0.017):
     '''
@@ -267,16 +267,15 @@ def planeslope_to_grad(slope, pixscale=0.017):
     '''
     return slope / (pixscale * 1000.) * 1000.
 
-
 def zcoeffs_to_command(ptt):
     return [ptt[0], -z_to_xgrad(ptt[2]), -z_to_xgrad(ptt[1])]
-
 
 def planecoeffs_to_command(ptt):
     return [ptt[0], -planeslope_to_grad(ptt[2]), -planeslope_to_grad(ptt[1])]
 
+def segment_mapping(mask):
 
-def segment_mapping(segments):
+    segments, nseg = label(mask)
     shape = segments.shape
     ceny, cenx = ((shape[0] - 1) / 2., (shape[1] - 1) / 2.)
     centroids = np.asarray(com(segments > 0, labels=segments, index=np.unique(segments)[1:]))
@@ -294,5 +293,23 @@ def segment_mapping(segments):
 
     return newlabel
 
-
-
+def fit_plane_to_each_segment(segments, surface):
+    '''
+    Fit PTT plane to each segment on a surface
+    and return the plane coefficients as well
+    as the corresponding command (the negative
+    of which would drive the observed PTT out).
+    '''
+    fitcoeffs = []
+    command = []
+    for seg_id in np.unique(segments)[1:]: # skip the background (=0)
+        segmask = segments == seg_id
+        indices = np.indices(surface.shape)
+        # center plane origin on segment center
+        ceny, cenx = (int(np.rint(np.mean(indices[0][segmask]))), int(np.rint(np.mean(indices[1][segmask]))))
+        indices[0] -= ceny
+        indices[1] -= cenx
+        fitparams = analysis.fit_plane(surface, segmask, indices)
+        command.append(planecoeffs_to_command(fitparams))
+        fitcoeffs.append(fitparams)
+    return fitcoeffs, command
