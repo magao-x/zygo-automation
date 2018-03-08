@@ -203,7 +203,7 @@ def twitch_individual_segments(nsegments, ptt=None):
 
     return inputlist
 
-def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=1., nval=10.):
+def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=1., nval=10., addto=None):
     '''
     Generate the input list that will sequentially apply a PTT mode from minval to
     maxval in nval steps.
@@ -222,6 +222,11 @@ def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=
         nval : int
             Number of values between minval and maxval to test.
             Inclusive on both sides of range. 
+        addto : str or list, opt.
+            Command to stack the one being built on 
+            top of. Normally, this will be a flat.
+            Can be either a filepath or a list of
+            PTT commands.
 
     Returns:
         inputlist : list
@@ -232,7 +237,17 @@ def test_segment_mode_range(n, nsegments=37, mtype='piston', minval=-1., maxval=
     vals = np.linspace(minval, maxval, num=nval, endpoint=True)
     for v in vals:
         inputlist.append(build_segment_command(n, nsegments=nsegments, **{mtype : v}))
-    return inputlist
+
+    if addto is not None:
+        if isinstance(addto, str):
+            stackwith = read_ptt_command(addto)
+        elif isinstance(addto, (list, np.ndarray)):
+            stackwith = addto
+        else:
+            raise TypeError('addto type not recognized. Must be string or list-like.')
+        return [stack_commands(i, stackwith) for i in inputlist]
+    else:
+        return inputlist
 
 def z_to_xgrad(zcoeff, segdiam=1.212):
     '''
