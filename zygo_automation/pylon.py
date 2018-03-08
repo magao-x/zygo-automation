@@ -1,6 +1,16 @@
 '''
 Tools for interfacing with Basler cameras
 
+Getting this to work can be realy finicky.
+On Mac, you may or may not need to define
+a new environment variable:
+
+export LD_LIBRARY_PATH=/Library/Frameworks/pylon.framework/Libraries 
+
+However, this may conflict with Pylon Viewer,
+so I recommend defining interatively before
+running.
+
 example usage:
 
 # Find and open a camera
@@ -27,7 +37,7 @@ try:
 	import pypylon as pp
 except ImportError:
 	    log.warning('Could not load pypylon package! Basler functionality will be severely crippled.')
-	    
+
 def find_devices():
 	return pp.factory.find_devices()
 
