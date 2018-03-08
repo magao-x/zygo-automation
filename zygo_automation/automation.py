@@ -324,3 +324,34 @@ class IrisAOMonitor(FileMonitor):
         # Force a new file name with the iterator just to
         # avoid conflicts with past files.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
+
+class BaslerMonitor(FileMonitor):
+    def __init__(self, path, camera, images, stop_after_capture=False):
+        '''
+        Parameters:
+            path : str
+                Network path to watch for 'dm_ready'
+                file indicating the DM is in the
+                requested state.
+            camera : pypylon camera object
+            images : list
+                List to append images to
+            stop_after_capture : bool, opt.
+                Stop monitor after capturing an 
+                image? Default: False.
+        '''
+        super().__init__(os.path.join(path,'dm_ready'))
+        
+        self.camera = camera
+        self.stop_after_capture = stop_after_capture
+
+    def on_new_data(self, newdata):
+        '''
+        On detecting a new 'dm_ready' file, capture
+        an image on the Basler camera.
+        '''
+        images.append(cam.grab_image().astype(float))
+        log.info('Grabbed Basler frame! ({})'.format(len(images)))
+        open(os.path.join(os.path.dirname(self.file), 'basler_ready'), 'w').close()
+        if self.stop_after_capture:
+            self.continue_monitoring = False
