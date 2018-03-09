@@ -282,11 +282,24 @@ def planeslope_to_grad(slope, pixscale=0.017):
     '''
     return slope / (pixscale * 1000.) * 1000.
 
+def grad_to_planeslope(grad, pixscale=0.017):
+    '''
+    Given a gradient (mrad), return the corresponding
+    slope in microns/pix
+
+    pixscale: mm / pixel
+    slope: microns / pix
+    '''
+    return grad * pixscale
+
 def zcoeffs_to_command(ptt):
     return [ptt[0], -z_to_xgrad(ptt[2]), -z_to_xgrad(ptt[1])]
 
 def planecoeffs_to_command(ptt):
     return [ptt[0], -planeslope_to_grad(ptt[2]), -planeslope_to_grad(ptt[1])]
+
+def command_to_planecoeffs(params):
+    return [params[0], -grad_to_planeslope(params[2]), -grad_to_planeslope(params[1])]
 
 def segment_mapping(mask):
 
