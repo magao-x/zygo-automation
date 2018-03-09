@@ -1,4 +1,5 @@
 import os
+from itertools import product
 import subprocess
 import shutil
 
@@ -99,6 +100,92 @@ def set_row_column(idx, value, dim=0, xdim=32, ydim=32):
         dm_image[:,idx] = value
     
     return dm_image
+
+def test_inputs_pixel(xpix, ypix, val):
+    '''
+    Generate a list of images looping over
+    every actuator on the DM.
+
+    Parameters:
+        xpix, ypix: ints
+            X and Y dimensions of the DM
+        val : float
+            Value to set each pixel to.
+
+    Returns:
+        image_list : nd array
+            list of (ypix, xpix) nd arrays
+    '''
+    pixel_list = product(range(xpix), range(ypix), [val,] )
+    image_list = []
+    for pix in pixel_list:
+        image_list.append( set_pixel(*pix) )
+    return image_list
+
+def test_inputs_row_column(num_cols, val, dim=0):
+    '''
+    Generate a list of images looping over
+    every row/column on the DM.
+
+    Parameters:
+        num_cols: int
+            Number of rows/columns along
+            the axis being looped over
+        val : float
+            Value to set each row/column to.
+        dim : int
+            0 or 1. Loop over X or Y dimension.
+
+    Returns:
+        image_list : nd array
+            list of (ypix, xpix) nd arrays
+    '''
+            
+    image_list = []
+    for col in range(num_cols):
+        image_list.append( set_row_column(col, val, dim=dim) )
+    return image_list
+
+def mask_inputs(xdim, ydim, value):
+    '''
+    Create the DM inputs necessary for defining
+    a mask in Mx.
+
+    This creates two images in which the edges
+    of the active mirror are set to plus/minus
+    the input value.
+
+    Usage:
+    1. Oversize the mask in Mx, feed the
+    mask_inputs into Zygo_DM_Run.
+    2. Read in the resulting images and 
+    difference them.
+    3. Set the "real" mask to encompass
+    the active part of the DM. 
+
+    Parameters:
+        xdim, ydim : int
+            X, Y dimensions of DM
+        value :
+            Amount by which to push/pull
+            the edge actuators.
+
+    Returns:
+        image_list : list of array-likes
+            Cube of images used to define the mask
+    '''
+
+    vallist = [-value, value]
+    image_list = []
+    for val in vallist:
+        im1 = set_row_column(0, 1, dim=0, xdim=xdim, ydim=ydim)
+        im2 = set_row_column(-1, 1, dim=0, xdim=xdim, ydim=ydim)
+        im3 = set_row_column(0, 1, dim=1, xdim=xdim, ydim=ydim)
+        im4 = set_row_column(-1, 1, dim=1, xdim=xdim, ydim=ydim)
+        image = (im1 + im2 + im3 + im4).astype(bool)
+        image_list.append(image.astype(int) * val)
+
+    return image_list
 
 def write_fits(filename, data, overwrite=False):
     '''

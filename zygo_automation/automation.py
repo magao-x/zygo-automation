@@ -1,4 +1,3 @@
-from itertools import product
 import glob as glob
 import os
 from time import sleep
@@ -7,13 +6,14 @@ import h5py
 import numpy as np
 
 from .zygo import capture_frame, read_many_raw_datx
-from .dm import load_channel, set_pixel, set_row_column, write_fits
+from .bmc import load_channel, write_fits
+from .irisao import write_ptt_command, apply_ptt_command
 
 import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def Zygo_DM_Run(dm_inputs, network_path, outname, delay=None, consolidate=True, dry_run=False):
+def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False, mtype='acquire'):
     '''
     Loop over dm_inputs, setting the DM in the requested state,
     and taking measurements on the Zygo.
@@ -32,6 +32,9 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, delay=None, consolidate=True, 
             Corona and the Zygo machine. This is where
             cross-machine communication will take place.
             Both machines must have read/write privileges.
+        dmtype : str
+            'bmc' or 'irisao'. This determines whether
+            the dm_inputs are written to .fits or .txt.
         outname : str
             Directory to write results out to. Directory
             must not already exist.
@@ -46,38 +49,56 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, delay=None, consolidate=True, 
             without taking images. This is useful to debugging
             things on the DM side / watching the fringes on
             the Zygo live monitor.
+        clobber : bool, opt.
+            Allow writing to directory that already exists?
+            Risks overwriting files that already exist, but
+            useful for interactive measurements.
+        mtype : str
+            'acquire' or 'measure'. 'Acquire' takes a measurement
+            without analyzing or updating the GUI (faster), while
+            'measure' takes a measurement, analyzes, and updates
+            the GUI (slower).
     Returns: nothing
 
     '''
-    if not dry_run:
+    if dmtype.upper() not in ['BMC','IRISAO']:
+        raise ValueError('dmtype not recognized. Must be either "BMC" or "IRISAO".')
+
+    if not (dry_run or clobber):
         # Create a new directory outname to save results to
         assert not os.path.exists(outname), '{} already exists!'.format(outname)
         os.mkdir(outname)
 
-    for idx, inputs in enumerate(dm_inputs):
-        #Remove any old inputs if they exist
-        old_files = glob.glob(os.path.join(network_path,'dm_input*.fits'))
-        for old_file in old_files:
-            if os.path.exists(old_file):
-                os.remove(old_file)
+    zm = ZygoMonitor(network_path)
 
-        # Write out FITS file with requested DM input
-        log.info('Setting DM to state {}/{}.'.format(idx + 1, len(dm_inputs)))
-        input_file = os.path.join(network_path,'dm_input.fits'.format(idx))
-        write_fits(input_file, inputs, overwrite=True)
+    for idx, inputs in enumerate(dm_inputs):
+
+        if dmtype.upper() == 'BMC':
+            #Remove any old inputs if they exist
+            old_files = glob.glob(os.path.join(network_path,'dm_input*.fits'))
+            for old_file in old_files:
+                if os.path.exists(old_file):
+                    os.remove(old_file)
+            # Write out FITS file with requested DM input
+            log.info('Setting DM to state {}/{}.'.format(idx + 1, len(dm_inputs)))
+            input_file = os.path.join(network_path,'dm_input.fits'.format(idx))
+            write_fits(input_file, inputs, overwrite=True)
+        else: #IRISAO
+            input_file = os.path.join(network_path,'ptt_input.txt'.format(idx))
+            write_ptt_command(inputs, input_file)
 
         # Wait until DM indicates it's in the requested state
         # I'm a little worried the DM could get there before
         # the monitor starts watching the dm_ready file, but 
         # that hasn't happened yet.
-        zm = ZygoMonitor(network_path)
-        zm.watch(0.1)
+        zm.watch(0.01)
         log.info('DM ready!')
 
         if not dry_run:
             # Take an image on the Zygo
             log.info('Taking image!')
-            capture_frame(filename=os.path.join(outname,'frame_{0:05d}.datx'.format(idx)))
+            capture_frame(filename=os.path.join(outname,'frame_{0:05d}.datx'.format(idx)),
+                          mtype=mtype)
 
         # Remove input file
         if os.path.exists(input_file):
@@ -92,7 +113,7 @@ def Zygo_DM_Run(dm_inputs, network_path, outname, delay=None, consolidate=True, 
         # Don't read attributes into a dictionary. This causes python to crash (on Windows)
         # when re-assignging them to hdf5 attributes.
         alldata = read_many_raw_datx(sorted(glob.glob(os.path.join(outname,'frame_*.datx'))), 
-                                     attrs_to_dict=False, mask_and_scale=False)
+                                     attrs_to_dict=True, mask_and_scale=True)
         write_dm_run_to_hdf5(os.path.join(outname,'alldata.hdf5'),
                              np.asarray(alldata['surface']),
                              alldata['surface_attrs'][0],
@@ -135,7 +156,7 @@ def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube,
     '''
 
     # create hdf5 file
-    f = h5py.File(filename)
+    f = h5py.File(filename, 'w')
     
     # surface data and attributes
     surf = f.create_dataset('surface', data=surface_cube)
@@ -153,92 +174,6 @@ def write_dm_run_to_hdf5(filename, surface_cube, surface_attrs, intensity_cube,
     mask = f.create_dataset('mask', data=mask)
     
     f.close()
-
-def test_inputs_pixel(xpix, ypix, val):
-    '''
-    Generate a list of images looping over
-    every actuator on the DM.
-
-    Parameters:
-        xpix, ypix: ints
-            X and Y dimensions of the DM
-        val : float
-            Value to set each pixel to.
-
-    Returns:
-        image_list : nd array
-            list of (ypix, xpix) nd arrays
-    '''
-    pixel_list = product(range(xpix), range(ypix), [val,] )
-    image_list = []
-    for pix in pixel_list:
-        image_list.append( set_pixel(*pix) )
-    return image_list
-
-def test_inputs_row_column(num_cols, val, dim=0):
-    '''
-    Generate a list of images looping over
-    every row/column on the DM.
-
-    Parameters:
-        num_cols: int
-            Number of rows/columns along
-            the axis being looped over
-        val : float
-            Value to set each row/column to.
-        dim : int
-            0 or 1. Loop over X or Y dimension.
-
-    Returns:
-        image_list : nd array
-            list of (ypix, xpix) nd arrays
-    '''
-            
-    image_list = []
-    for col in range(num_cols):
-        image_list.append( set_row_column(col, val, dim=dim) )
-    return image_list
-
-def mask_inputs(xdim, ydim, value):
-    '''
-    Create the DM inputs necessary for defining
-    a mask in Mx.
-
-    This creates two images in which the edges
-    of the active mirror are set to plus/minus
-    the input value.
-
-    Usage:
-    1. Oversize the mask in Mx, feed the
-    mask_inputs into Zygo_DM_Run.
-    2. Read in the resulting images and 
-    difference them.
-    3. Set the "real" mask to encompass
-    the active part of the DM. 
-
-    Parameters:
-        xdim, ydim : int
-            X, Y dimensions of DM
-        value :
-            Amount by which to push/pull
-            the edge actuators.
-
-    Returns:
-        image_list : list of array-likes
-            Cube of images used to define the mask
-    '''
-
-    vallist = [-value, value]
-    image_list = []
-    for val in vallist:
-        im1 = set_row_column(0, 1, dim=0, xdim=xdim, ydim=ydim)
-        im2 = set_row_column(-1, 1, dim=0, xdim=xdim, ydim=ydim)
-        im3 = set_row_column(0, 1, dim=1, xdim=xdim, ydim=ydim)
-        im4 = set_row_column(-1, 1, dim=1, xdim=xdim, ydim=ydim)
-        image = (im1 + im2 + im3 + im4).astype(bool)
-        image_list.append(image.astype(int) * val)
-
-    return image_list
 
 
 class FileMonitor(object):
@@ -266,6 +201,7 @@ class FileMonitor(object):
         Pick out new data that have appeared since last query.
         Period given in seconds.
         '''
+        self.continue_monitoring = True
         try:
             while self.continue_monitoring:
                 # Check the file
@@ -323,7 +259,7 @@ class ZygoMonitor(FileMonitor):
         os.remove(newdata) # delete DM ready file
         self.continue_monitoring = False # stop monitor loop
 
-class DMMonitor(FileMonitor):
+class BMCMonitor(FileMonitor):
     '''
     Set the DM machine to watch a particular FITS files for
     a modification, indicating a request for a new DM actuation
@@ -332,14 +268,14 @@ class DMMonitor(FileMonitor):
     Will ignore the current file if it already exists
     when the monitor starts (until it's modified).
     '''
-    def __init__(self, path):
+    def __init__(self, path, input_file='dm_input.fits'):
         '''
         Parameters:
             path : str
                 Network path to watch for 'dm_input.fits'
                 file.
         '''
-        super().__init__(os.path.join(path,'dm_input.fits'))
+        super().__init__(os.path.join(path, input_file))
 
     def on_new_data(self, newdata):
         '''
@@ -355,3 +291,67 @@ class DMMonitor(FileMonitor):
         # Force a new file name with the iterator just to
         # avoid conflicts with past files.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
+
+class IrisAOMonitor(FileMonitor):
+    '''
+    Set the DM machine to watch a particular FITS files for
+    a modification, indicating a request for a new DM actuation
+    state.
+
+    Will ignore the current file if it already exists
+    when the monitor starts (until it's modified).
+    '''
+    def __init__(self, path, input_file='ptt_input.txt'):
+        '''
+        Parameters:
+            path : str
+                Network path to watch for 'ptt_input.txt'
+                file.
+        '''
+        super().__init__(os.path.join(path, input_file))
+
+    def on_new_data(self, newdata):
+        '''
+        On detecting an updated dm_input.fits file,
+        load the image onto the DM and write out an
+        empty 'dm_ready' file to the network path
+        '''
+        # Load image from FITS file onto DM channel 0
+        log.info('Setting DM from new PTT file {}'.format(newdata))
+        apply_ptt_command(newdata)
+
+        # Write out empty file to tell Zygo the DM is ready.
+        # Force a new file name with the iterator just to
+        # avoid conflicts with past files.
+        open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
+
+class BaslerMonitor(FileMonitor):
+    def __init__(self, path, camera, images, stop_after_capture=False):
+        '''
+        Parameters:
+            path : str
+                Network path to watch for 'dm_ready'
+                file indicating the DM is in the
+                requested state.
+            camera : pypylon camera object
+            images : list
+                List to append images to
+            stop_after_capture : bool, opt.
+                Stop monitor after capturing an 
+                image? Default: False.
+        '''
+        super().__init__(os.path.join(path,'dm_ready'))
+        
+        self.camera = camera
+        self.stop_after_capture = stop_after_capture
+
+    def on_new_data(self, newdata):
+        '''
+        On detecting a new 'dm_ready' file, capture
+        an image on the Basler camera.
+        '''
+        images.append(cam.grab_image().astype(float))
+        log.info('Grabbed Basler frame! ({})'.format(len(images)))
+        open(os.path.join(os.path.dirname(self.file), 'basler_ready'), 'w').close()
+        if self.stop_after_capture:
+            self.continue_monitoring = False
