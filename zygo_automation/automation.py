@@ -4,6 +4,7 @@ from time import sleep
 
 import h5py
 import numpy as np
+from astropy.io import fits
 
 from .zygo import capture_frame, read_many_raw_datx
 from .bmc import load_channel, write_fits
@@ -321,7 +322,7 @@ class ALPAOMonitor(FileMonitor):
         '''
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
-        alpao.apply_command(fits.read(newdata)[0].data, serial)
+        alpao.apply_command(fits.open(newdata)[0].data, serial)
 
         # Write out empty file to tell Zygo the DM is ready.
         # Force a new file name with the iterator just to
