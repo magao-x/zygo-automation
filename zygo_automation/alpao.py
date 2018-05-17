@@ -35,6 +35,10 @@ def apply_command(data, serial):
         nothing
     '''
 
+    # check that max/min aren't violated
+    if np.any(np.abs(data) > 1):
+        raise ValueError("DM97 inputs must be between -1 and +1.")
+
     #add empty dimension to 1D arrays
     if np.ndim(data) == 1:
         data = np.expand_dims(data,1)
