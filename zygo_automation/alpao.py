@@ -42,7 +42,7 @@ def apply_command(data, serial):
     img = shmio.Image()
     img.link(serial)
     #write to shared memory
-    img.write(data)
+    img.write(data.astype(np.float64))
 
 def release_mirror(serial):
     log.warning("This doesn't do anything yet! The DM is NOT released.")
