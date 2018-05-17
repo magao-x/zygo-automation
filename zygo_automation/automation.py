@@ -35,7 +35,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
             cross-machine communication will take place.
             Both machines must have read/write privileges.
         dmtype : str
-            'bmc' or 'irisao'. This determines whether
+            'bmc', 'irisao', or 'alpao'. This determines whether
             the dm_inputs are written to .fits or .txt.
         outname : str
             Directory to write results out to. Directory
@@ -63,7 +63,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
     Returns: nothing
 
     '''
-    if dmtype.upper() not in ['BMC','IRISAO']:
+    if dmtype.upper() not in ['BMC','IRISAO','ALPAO']:
         raise ValueError('dmtype not recognized. Must be either "BMC" or "IRISAO".')
 
     if not (dry_run or clobber):
@@ -75,7 +75,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
 
     for idx, inputs in enumerate(dm_inputs):
 
-        if dmtype.upper() == 'BMC':
+        if (dmtype.upper() == 'BMC') or (dmtype.upper() == 'ALPAO'):
             #Remove any old inputs if they exist
             old_files = glob.glob(os.path.join(network_path,'dm_input*.fits'))
             for old_file in old_files:
@@ -313,6 +313,7 @@ class ALPAOMonitor(FileMonitor):
                 ALPAO DM97 serial number. Probably "BAX150"
         '''
         super().__init__(os.path.join(path, input_file))
+        self.serial = serial
 
     def on_new_data(self, newdata):
         '''
@@ -322,7 +323,7 @@ class ALPAOMonitor(FileMonitor):
         '''
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
-        alpao.apply_command(fits.open(newdata)[0].data, serial)
+        alpao.apply_command(fits.open(newdata)[0].data, self.serial)
 
         # Write out empty file to tell Zygo the DM is ready.
         # Force a new file name with the iterator just to
