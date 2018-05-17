@@ -22,6 +22,10 @@ def apply_command(data, serial):
     Apply a command to an ALPAO DM via shared
     memory image.
 
+    This assumes you already have the ALPAO control
+    loop running and waiting for share memory images
+    at <serial>.
+
     Parameters:
         data : nd array
             97 x 1 nd array of type float64

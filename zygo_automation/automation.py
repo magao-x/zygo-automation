@@ -8,6 +8,7 @@ import numpy as np
 from .zygo import capture_frame, read_many_raw_datx
 from .bmc import load_channel, write_fits
 from .irisao import write_ptt_command, apply_ptt_command
+from . import alpao
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -286,6 +287,41 @@ class BMCMonitor(FileMonitor):
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
         load_channel(newdata, 0)
+
+        # Write out empty file to tell Zygo the DM is ready.
+        # Force a new file name with the iterator just to
+        # avoid conflicts with past files.
+        open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
+
+class ALPAOMonitor(FileMonitor):
+    '''
+    Set the DM machine to watch a particular FITS files for
+    a modification, indicating a request for a new DM actuation
+    state.
+
+    Will ignore the current file if it already exists
+    when the monitor starts (until it's modified).
+    '''
+    def __init__(self, path, serial, input_file='dm_input.fits'):
+        '''
+        Parameters:
+            path : str
+                Network path to watch for 'dm_input.fits'
+                file.
+            serial : str
+                ALPAO DM97 serial number. Probably "BAX150"
+        '''
+        super().__init__(os.path.join(path, input_file))
+
+    def on_new_data(self, newdata):
+        '''
+        On detecting an updated dm_input.fits file,
+        load the image onto the DM and write out an
+        empty 'dm_ready' file to the network path
+        '''
+        # Load image from FITS file onto DM channel 0
+        log.info('Setting DM from new image file {}'.format(newdata))
+        alpao.apply_command(fits.read(newdata)[0].data, serial)
 
         # Write out empty file to tell Zygo the DM is ready.
         # Force a new file name with the iterator just to
