@@ -82,7 +82,6 @@ def map_vector_to_square(vector):
     array = np.zeros((11,11))
     circmask = draw.circle(5,5,5.5,(11,11))
     array[circmask] = vector
-    array = array
     return array
 
 def map_square_to_vector(array):
@@ -101,7 +100,6 @@ def actuator_locations_array():
     square = np.zeros((11,11))
     circmask = draw.circle(5,5,5.5,(11,11))
     square[circmask] = np.arange(1,98)
-    square = square
     return square
 
 def generate_zernike_modes(nterms=15,to_vector=True):
