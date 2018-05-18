@@ -326,7 +326,7 @@ class IrisAOMonitor(FileMonitor):
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
 
 class BaslerMonitor(FileMonitor):
-    def __init__(self, path, camera, images, stop_after_capture=False):
+    def __init__(self, path, camera, images, stop_after_capture=False, nimages=1):
         '''
         Parameters:
             path : str
@@ -339,19 +339,27 @@ class BaslerMonitor(FileMonitor):
             stop_after_capture : bool, opt.
                 Stop monitor after capturing an 
                 image? Default: False.
+            nimages : int, opt.
+                Take multiple images? If > 1, each element
+                of the image list will be an array of images
         '''
         super().__init__(os.path.join(path,'dm_ready'))
         
         self.camera = camera
+        self.images = images
         self.stop_after_capture = stop_after_capture
+        self.nimages = nimages
 
     def on_new_data(self, newdata):
         '''
         On detecting a new 'dm_ready' file, capture
         an image on the Basler camera.
         '''
-        images.append(cam.grab_image().astype(float))
-        log.info('Grabbed Basler frame! ({})'.format(len(images)))
+        if self.nimages == 1:
+            self.images.append(self.camera.grab_image().astype(float))
+        else:
+            self.images.append(np.asarray(list(self.camera.grab_images(self.nimages))).astype(float))
+        log.info('Grabbed Basler frame! ({})'.format(len(self.images)))
         open(os.path.join(os.path.dirname(self.file), 'basler_ready'), 'w').close()
         if self.stop_after_capture:
             self.continue_monitoring = False
