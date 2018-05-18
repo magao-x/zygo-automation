@@ -1,7 +1,6 @@
 '''
 Functions for commanding ALPAO DM97 via
 shared memory images, as implemented in milk.
-
 '''
 
 import logging
@@ -48,17 +47,43 @@ def apply_command(data, serial):
     #write to shared memory
     img.write(data.astype(np.float64))
 
-def release_mirror(serial):
-    log.warning("This doesn't do anything yet! The DM is NOT released.")
-    pass
-
 def set_single_actuator(n, value):
+    '''
+    Generate the input array for a single poked
+    actuator.
+
+    Parameters:
+        n : int
+            Actuator number. See actuator_locations_array
+        value : float
+            Fractional value to place on the DM. Must be
+            between -1 and +1.
+    Returns:
+        inputs : nd array
+            97 x 1 array of zeros except for poked actuator
+    '''
     if not np.abs(value) <= 1: raise ValueError("DM97 inputs must be between -1 and +1.")
     inputs = np.zeros((97,), dtype=np.float64)
     inputs[n] = value
     return inputs
 
 def set_row_column(idx, value, dim):
+    '''
+    Generate the input array for a column of poked
+    actuators.
+
+    Parameters:
+        idx : int
+            Column number. See actuator_locations_array
+        value : float
+            Fractional value to place on the DM. Must be
+            between -1 and +1.
+        dim : int
+            0 or 1. X or Y axis.
+    Returns:
+        inputs : nd array
+            97 x 1 array of zeros except for poked column.
+    '''
     array = np.zeros((11,11))
     if dim == 0:
         array[idx,:] = value
@@ -67,6 +92,19 @@ def set_row_column(idx, value, dim):
     return map_square_to_vector(array)
 
 def influence_function_loop(value):
+    '''
+    Generate the list of inputs to be looped
+    over for influence function characterization.
+
+    Parameters:y
+        value : float
+            Fractional value to poke each actuator.
+            Must be between -1 and +1.
+    Returns:
+        inputs : list
+            list of 97 inputs, one actuator poked in each.
+    '''
+            
     allinputs = []
     for n in range(97):
         allinputs.append(set_single_actuator(n, value))
@@ -78,6 +116,14 @@ def map_vector_to_square(vector):
     ordered by actuator number, embed the
     data in a square array (primarily for 
     visualization purposes).
+
+    Parameters:
+        vector : array-like
+            97 element DM input to be embedded
+            in 11x11 square array.
+    Returns:
+        array : nd array
+            11x11 square array
     '''
     array = np.zeros((11,11))
     circmask = draw.circle(5,5,5.5,(11,11))
@@ -91,12 +137,26 @@ def map_square_to_vector(array):
     the actuator values in an properly ordered
     vector (that could be passed directly to the 
     ALPAO SDK)
+
+    Parameters:
+        array : nd array
+            2D (11x11) array of DM inputs
+    Returns:
+        vector : nd array
+            97-element input vector
     '''
     circmask = draw.circle(5,5,5.5,(11,11))
     return array[circmask]
 
 def actuator_locations_array():
-    #Actuator locations defined on 11x11 array
+    '''
+    Generate an 11x11 array showing
+    the DM locations and numbering scheme.
+
+    If plotted in matplotlib (origin='upper'),
+    this is consistent with the DM as seen
+    from the Zygo.
+    '''
     square = np.zeros((11,11))
     circmask = draw.circle(5,5,5.5,(11,11))
     square[circmask] = np.arange(1,98)
