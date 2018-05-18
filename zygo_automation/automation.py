@@ -290,8 +290,6 @@ class BMCMonitor(FileMonitor):
         load_channel(newdata, 0)
 
         # Write out empty file to tell Zygo the DM is ready.
-        # Force a new file name with the iterator just to
-        # avoid conflicts with past files.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
 
 class ALPAOMonitor(FileMonitor):
@@ -326,8 +324,6 @@ class ALPAOMonitor(FileMonitor):
         alpao.apply_command(fits.open(newdata)[0].data, self.serial)
 
         # Write out empty file to tell Zygo the DM is ready.
-        # Force a new file name with the iterator just to
-        # avoid conflicts with past files.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
 
 class IrisAOMonitor(FileMonitor):
@@ -359,8 +355,6 @@ class IrisAOMonitor(FileMonitor):
         apply_ptt_command(newdata)
 
         # Write out empty file to tell Zygo the DM is ready.
-        # Force a new file name with the iterator just to
-        # avoid conflicts with past files.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
 
 class BaslerMonitor(FileMonitor):
