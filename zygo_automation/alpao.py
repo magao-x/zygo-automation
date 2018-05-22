@@ -16,6 +16,8 @@ import numpy as np
 from skimage import draw
 import poppy
 
+from astropy.io import fits
+
 def apply_command(data, serial):
     '''
     Apply a command to an ALPAO DM via shared
@@ -41,6 +43,26 @@ def apply_command(data, serial):
     img.link(serial)
     #write to shared memory
     img.write(data.astype(np.float64))
+
+def command_to_fits(data, filename, overwrite=False):
+    '''
+    Save a command to fits file.
+
+    Parameters:
+        data : nd array
+            97 x 1 nd array of type float64
+        filename : str
+            File name to save fits file to.
+        overwrite : bool, opt.
+            Overwrite file if it already exists?
+    Returns:
+        nothing
+    '''
+    #add empty dimension to 1D arrays
+    if np.ndim(data) == 1:
+        data = np.expand_dims(data,1)
+    hdu = fits.PrimaryHDU(data.astype(np.float64))
+    hdu.writeto(filename, overwrite=overwrite)
 
 def set_single_actuator(n, value):
     '''
