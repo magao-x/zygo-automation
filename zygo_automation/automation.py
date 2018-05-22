@@ -4,10 +4,12 @@ from time import sleep
 
 import h5py
 import numpy as np
+from astropy.io import fits
 
 from .zygo import capture_frame, read_many_raw_datx
 from .bmc import load_channel, write_fits
 from .irisao import write_ptt_command, apply_ptt_command
+from . import alpao
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +35,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
             cross-machine communication will take place.
             Both machines must have read/write privileges.
         dmtype : str
-            'bmc' or 'irisao'. This determines whether
+            'bmc', 'irisao', or 'alpao'. This determines whether
             the dm_inputs are written to .fits or .txt.
         outname : str
             Directory to write results out to. Directory
@@ -61,7 +63,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
     Returns: nothing
 
     '''
-    if dmtype.upper() not in ['BMC','IRISAO']:
+    if dmtype.upper() not in ['BMC','IRISAO','ALPAO']:
         raise ValueError('dmtype not recognized. Must be either "BMC" or "IRISAO".')
 
     if not (dry_run or clobber):
@@ -73,7 +75,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
 
     for idx, inputs in enumerate(dm_inputs):
 
-        if dmtype.upper() == 'BMC':
+        if (dmtype.upper() == 'BMC') or (dmtype.upper() == 'ALPAO'):
             #Remove any old inputs if they exist
             old_files = glob.glob(os.path.join(network_path,'dm_input*.fits'))
             for old_file in old_files:
@@ -288,8 +290,40 @@ class BMCMonitor(FileMonitor):
         load_channel(newdata, 0)
 
         # Write out empty file to tell Zygo the DM is ready.
-        # Force a new file name with the iterator just to
-        # avoid conflicts with past files.
+        open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
+
+class ALPAOMonitor(FileMonitor):
+    '''
+    Set the DM machine to watch a particular FITS files for
+    a modification, indicating a request for a new DM actuation
+    state.
+
+    Will ignore the current file if it already exists
+    when the monitor starts (until it's modified).
+    '''
+    def __init__(self, path, serial, input_file='dm_input.fits'):
+        '''
+        Parameters:
+            path : str
+                Network path to watch for 'dm_input.fits'
+                file.
+            serial : str
+                ALPAO DM97 serial number. Probably "BAX150"
+        '''
+        super().__init__(os.path.join(path, input_file))
+        self.serial = serial
+
+    def on_new_data(self, newdata):
+        '''
+        On detecting an updated dm_input.fits file,
+        load the image onto the DM and write out an
+        empty 'dm_ready' file to the network path
+        '''
+        # Load image from FITS file onto DM channel 0
+        log.info('Setting DM from new image file {}'.format(newdata))
+        alpao.apply_command(fits.open(newdata)[0].data, self.serial)
+
+        # Write out empty file to tell Zygo the DM is ready.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
 
 class IrisAOMonitor(FileMonitor):
@@ -321,8 +355,6 @@ class IrisAOMonitor(FileMonitor):
         apply_ptt_command(newdata)
 
         # Write out empty file to tell Zygo the DM is ready.
-        # Force a new file name with the iterator just to
-        # avoid conflicts with past files.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
 
 class BaslerMonitor(FileMonitor):
