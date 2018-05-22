@@ -33,11 +33,6 @@ def apply_command(data, serial):
     Returns:
         nothing
     '''
-
-    # check that max/min aren't violated
-    if np.any(np.abs(data) > 1):
-        raise ValueError("DM97 inputs must be between -1 and +1.")
-
     #add empty dimension to 1D arrays
     if np.ndim(data) == 1:
         data = np.expand_dims(data,1)
@@ -56,13 +51,11 @@ def set_single_actuator(n, value):
         n : int
             Actuator number. See actuator_locations_array
         value : float
-            Fractional value to place on the DM. Must be
-            between -1 and +1.
+            Displacement to place on the DM, given in microns.
     Returns:
         inputs : nd array
             97 x 1 array of zeros except for poked actuator
     '''
-    if not np.abs(value) <= 1: raise ValueError("DM97 inputs must be between -1 and +1.")
     inputs = np.zeros((97,), dtype=np.float64)
     inputs[n] = value
     return inputs
@@ -76,8 +69,8 @@ def set_row_column(idx, value, dim):
         idx : int
             Column number. See actuator_locations_array
         value : float
-            Fractional value to place on the DM. Must be
-            between -1 and +1.
+            Displacement value to place on the DM, given
+            in microns.
         dim : int
             0 or 1. X or Y axis.
     Returns:
