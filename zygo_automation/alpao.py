@@ -79,7 +79,7 @@ def set_single_actuator(n, value):
             97 x 1 array of zeros except for poked actuator
     '''
     inputs = np.zeros((97,), dtype=np.float64)
-    inputs[n] = value
+    inputs[n-1] = value
     return inputs
 
 def set_row_column(idx, value, dim):
@@ -121,7 +121,7 @@ def influence_function_loop(value):
     '''
             
     allinputs = []
-    for n in range(97):
+    for n in range(1,98):
         allinputs.append(set_single_actuator(n, value))
     return allinputs
 
