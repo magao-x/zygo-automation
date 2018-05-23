@@ -18,7 +18,7 @@ import poppy
 
 from astropy.io import fits
 
-def apply_command(data, serial):
+def apply_command(data, serial, img=None):
     '''
     Apply a command to an ALPAO DM via shared
     memory image.
@@ -32,17 +32,33 @@ def apply_command(data, serial):
             97 x 1 nd array of type float64
         serial : str
             DM serial number. Example: "BAX150"
+        img : pyImageStreamIO.Image object
+            Shared memory image to write to. Serial
+            is ignored if given. Default: None.
     Returns:
         nothing
     '''
     #add empty dimension to 1D arrays
     if np.ndim(data) == 1:
         data = np.expand_dims(data,1)
+
+    if img is None:
+        #connect to shared memory image
+        img = shmio.Image()
+        img.link(serial)
+    #write to shared memory
+    img.write(data.astype(np.float64))
+
+def link_to_shmimage(serial):
+    '''
+    Link to a shared memory image location
+    and return the pyImageStreamIO.image
+    object.
+    '''
     #connect to shared memory image
     img = shmio.Image()
     img.link(serial)
-    #write to shared memory
-    img.write(data.astype(np.float64))
+    return img
 
 def command_to_fits(data, filename, overwrite=False):
     '''

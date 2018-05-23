@@ -312,6 +312,7 @@ class ALPAOMonitor(FileMonitor):
         '''
         super().__init__(os.path.join(path, input_file))
         self.serial = serial
+        self.img = alpao.link_to_shmimage(serial)
 
     def on_new_data(self, newdata):
         '''
@@ -321,7 +322,7 @@ class ALPAOMonitor(FileMonitor):
         '''
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
-        alpao.apply_command(fits.open(newdata)[0].data, self.serial)
+        alpao.apply_command(fits.open(newdata)[0].data, serial, self.img)
 
         # Write out empty file to tell Zygo the DM is ready.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
