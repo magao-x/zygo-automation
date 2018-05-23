@@ -322,7 +322,7 @@ class ALPAOMonitor(FileMonitor):
         '''
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
-        alpao.apply_command(fits.open(newdata)[0].data, serial, self.img)
+        alpao.apply_command(fits.open(newdata)[0].data, self.serial, self.img)
 
         # Write out empty file to tell Zygo the DM is ready.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
