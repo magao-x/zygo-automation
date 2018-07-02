@@ -15,6 +15,7 @@ except ImportError:
 import numpy as np
 from skimage import draw
 import poppy
+import subprocess
 
 from astropy.io import fits
 
@@ -48,6 +49,26 @@ def apply_command(data, serial, img=None):
         img.link(serial)
     #write to shared memory
     img.write(data.astype(np.float64))
+
+def apply_command_from_fits(filename, serial):
+        '''
+    Apply a command to an ALPAO DM via the ./loadfits
+    CACAO command.
+
+    This assumes you already have the ALPAO control
+    loop running and waiting for share memory images
+    at <serial>.
+
+    Parameters:
+        filename : str
+            Path to FITS file with 97 x 1 nd array of type float64
+        serial : str
+            DM serial number. Example: "BAX150"
+    Returns:
+        nothing
+    '''
+    script_path = '/home/kvangorkom/ALPAO/ALPAO-interface'
+    subprocess.call(['sh', 'loadfits', filename, serial], cwd=script_path)
 
 def link_to_shmimage(serial):
     '''
