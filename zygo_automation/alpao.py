@@ -51,7 +51,7 @@ def apply_command(data, serial, img=None):
     img.write(data.astype(np.float64))
 
 def apply_command_from_fits(filename, serial):
-        '''
+    '''
     Apply a command to an ALPAO DM via the ./loadfits
     CACAO command.
 
