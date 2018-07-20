@@ -12,13 +12,13 @@ try:
     # Hard-coded path to Python scripting library on Zygo machine
     sys.path.append('C:\ProgramData\Zygo\Mx\Scripting')
     import zygo
-    from zygo import mx, instrument, systemcommands, connectionmanager, ui
+    from zygo import mx, instrument, systemcommands, connectionmanager, ui, core
     from zygo.units import Units
     # connect to Mx session (Mx must be open!)
-	try:
-    	connectionmanager.connect()
-	except ConnectionRefusedError:
-		log.warning('Zygo library loaded but connection to Mx could not be established.')
+    try:
+        connectionmanager.connect()
+    except core.ZygoError:
+        log.warning('Zygo library loaded but connection to Mx could not be established.')
 except ImportError:
     log.warning('Could not load Zygo Python library! Functionality will be severely crippled.')
 
