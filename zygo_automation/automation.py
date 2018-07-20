@@ -84,10 +84,11 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
             # Write out FITS file with requested DM input
             log.info('Setting DM to state {}/{}.'.format(idx + 1, len(dm_inputs)))
             input_file = os.path.join(network_path,'dm_input.fits'.format(idx))
-            # add extra dimension to ALPAO inputs if less than 2D
-            if (dmtype.upper() == 'ALPAO') and (np.ndim(data) == 1):
-                inputs = np.expand_dims(inputs, 1)
-            write_fits(input_file, inputs, overwrite=True)
+            # write out
+            if dmtype.upper() == 'ALPAO':
+                alpao.command_to_fits(inputs, input_file, overwrite=True)
+            else: #BMC
+                write_fits(input_file, inputs, overwrite=True)
         else: #IRISAO
             input_file = os.path.join(network_path,'ptt_input.txt'.format(idx))
             write_ptt_command(inputs, input_file)
@@ -325,7 +326,8 @@ class ALPAOMonitor(FileMonitor):
         '''
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
-        alpao.apply_command(fits.open(newdata)[0].data, self.serial, self.img)
+        #alpao.apply_command(fits.open(newdata)[0].data, self.serial, self.img)
+        alpao.apply_command_from_fits(newdata, self.serial)
 
         # Write out empty file to tell Zygo the DM is ready.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
