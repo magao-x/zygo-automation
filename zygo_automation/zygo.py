@@ -15,7 +15,10 @@ try:
     from zygo import mx, instrument, systemcommands, connectionmanager, ui
     from zygo.units import Units
     # connect to Mx session (Mx must be open!)
-    connectionmanager.connect()
+	try:
+    	connectionmanager.connect()
+	except ConnectionRefusedError:
+		log.warning('Zygo library loaded but connection to Mx could not be established.')
 except ImportError:
     log.warning('Could not load Zygo Python library! Functionality will be severely crippled.')
 
