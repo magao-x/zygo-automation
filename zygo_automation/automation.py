@@ -7,7 +7,7 @@ import numpy as np
 from astropy.io import fits
 
 from .zygo import capture_frame, read_many_raw_datx
-from .bmc import load_channel, write_fits
+from .bmc import load_channel, write_fits, update_voltage_2K
 from .irisao import write_ptt_command, apply_ptt_command
 from . import alpao
 
@@ -272,7 +272,7 @@ class ZygoMonitor(FileMonitor):
         os.remove(newdata) # delete DM ready file
         self.continue_monitoring = False # stop monitor loop
 
-class BMCMonitor(FileMonitor):
+class BMC1KMonitor(FileMonitor):
     '''
     Set the DM machine to watch a particular FITS files for
     a modification, indicating a request for a new DM actuation
@@ -299,6 +299,37 @@ class BMCMonitor(FileMonitor):
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
         load_channel(newdata, 0)
+
+        # Write out empty file to tell Zygo the DM is ready.
+        open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
+
+class BMC2KMonitor(FileMonitor):
+    '''
+    Set the DM machine to watch a particular FITS files for
+    a modification, indicating a request for a new DM actuation
+    state.
+
+    Will ignore the current file if it already exists
+    when the monitor starts (until it's modified).
+    '''
+    def __init__(self, path, input_file='dm_input.fits'):
+        '''
+        Parameters:
+            path : str
+                Network path to watch for 'dm_input.fits'
+                file.
+        '''
+        super().__init__(os.path.join(path, input_file))
+
+    def on_new_data(self, newdata):
+        '''
+        On detecting an updated dm_input.fits file,
+        load the image onto the DM and write out an
+        empty 'dm_ready' file to the network path
+        '''
+        # Load image from FITS file onto DM channel 0
+        log.info('Setting DM from new image file {}'.format(newdata))
+        update_voltage_2K(newdata)
 
         # Write out empty file to tell Zygo the DM is ready.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()

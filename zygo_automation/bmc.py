@@ -10,6 +10,21 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
+def update_voltage_2K(filename):
+    '''
+
+    Loads a fits file onto the dmvolt shared memory
+    image on the 2K.
+
+    Parameters:
+        filename : str
+            Path to FITS file with 50x50 array of type uint16
+    Returns:
+        nothing
+    '''
+    script_path = '/home/kvangorkom/dmcontrol'
+    subprocess.call(['sh', 'dm_update_volt', filename], cwd=script_path)
+
 def load_channel(fits_file, channel):
     '''
     Load a fits file into a channel on the BMC DM.
