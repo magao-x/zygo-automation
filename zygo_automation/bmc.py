@@ -134,7 +134,7 @@ def test_inputs_pixel(xpix, ypix, val):
     pixel_list = product(range(xpix), range(ypix), [val,] )
     image_list = []
     for pix in pixel_list:
-        image_list.append( set_pixel(*pix) )
+        image_list.append( set_pixel(xdim=xpix, ydim=ypix, *pix) )
     return image_list
 
 def test_inputs_row_column(num_cols, val, dim=0):
