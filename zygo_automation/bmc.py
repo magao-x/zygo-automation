@@ -187,7 +187,7 @@ def mask_inputs(xdim, ydim, value):
 
     return image_list
 
-def write_fits(filename, data, overwrite=False):
+def write_fits(filename, data, dtype=np.float32, overwrite=False):
     '''
     Write data out as a FITS file, as expected
     by Olivier's DM scripts.
@@ -198,10 +198,14 @@ def write_fits(filename, data, overwrite=False):
         data : nd array
             Data to write in the FITS file.
             This will be cast to a float32.
+        dtype : np data type
+            Displacement commands need to be
+            in float32. Volt commands need to
+            be in uint16.
         overwrite : bool, opt
             Overwrite the file if it already
             exists?
     Returns: nothing
     '''
-    hdu = fits.PrimaryHDU(data.astype(np.float32))
+    hdu = fits.PrimaryHDU(data.astype(dtype))
     hdu.writeto(filename, overwrite=overwrite)
