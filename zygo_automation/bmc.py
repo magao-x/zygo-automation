@@ -224,3 +224,57 @@ def write_fits(filename, data, dtype=np.float32, overwrite=False):
     '''
     hdu = fits.PrimaryHDU(data.astype(dtype))
     hdu.writeto(filename, overwrite=overwrite)
+    
+
+def map_vector_to_square_2K(vector):
+    '''
+    Given the DM data values in a vector
+    ordered by actuator number, embed the
+    data in a square array.
+    Parameters:
+        vector : array-like
+            2050-element DM input to be embedded
+            in 50x50 square array.
+    Returns:
+        array : nd array
+            50x50 square array
+    '''
+    array = np.zeros((50,50))
+    mask = bmc2k_mask()
+    array[mask] = vector
+    return array
+
+def map_square_to_vector_2K(array):
+    '''
+    Given the dm data values embedded
+    in a square (50x50) array, pull out
+    the actuator values in an properly ordered
+    vector.
+    Parameters:
+        array : nd array
+            2D (50x50) array of DM inputs
+    Returns:
+        vector : nd array
+            2050-element input vector
+    '''
+    mask = bmc2k_mask()
+    return array[mask]
+
+def actuator_locations_array_2K():
+    '''
+    Generate an 50x50 array showing
+    the DM locations and numbering scheme.
+    If plotted in matplotlib (origin='upper'),
+    this is consistent with the DM as seen
+    from the Zygo.
+    '''
+    arr = map_vector_to_square(np.arange(1,2041))
+    mask = bmc2k_mask()
+    arr[~mask] = np.nan
+    return arr.T[:,::-1]
+
+def mask_2K():
+    mask = np.zeros((50,50), dtype=bool)
+    circmask = draw.circle(24.5,24.5,25.6,(50,50))
+    mask[circmask] = 1
+    return mask
