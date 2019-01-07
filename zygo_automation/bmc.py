@@ -5,6 +5,7 @@ import shutil
 
 from astropy.io import fits
 import numpy as np
+from skimage import draw
 
 import logging
 logging.basicConfig(level=logging.INFO)
