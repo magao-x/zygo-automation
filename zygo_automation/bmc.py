@@ -133,6 +133,9 @@ def set_row_column(idx, value, dim=0, xdim=32, ydim=32):
     
     return dm_image
 
+def influence_cube_2K(val):
+    return [set_pixel(0, i, val, xdim=1, ydim=2040) for i in range(2040)]
+
 def test_inputs_pixel(xpix, ypix, val):
     '''
     Generate a list of images looping over
