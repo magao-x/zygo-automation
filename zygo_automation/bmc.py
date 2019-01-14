@@ -11,20 +11,36 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def update_voltage_2K(filename):
-    '''
 
-    Loads a fits file onto the dmvolt shared memory
-    image on the 2K.
+# vestige of old API. Leaving for now.
+#def update_dmvolt_2K(filename):
+#    '''
+#
+#    Loads a fits file onto the dmvolt shared memory
+#    image on the 2K.
+#
+#    Parameters:
+#        filename : str
+#            Path to FITS file with 50x50 array of type uint16
+#    Returns:
+#        nothing
+#    '''
+#    script_path = '/home/kvangorkom/dmcontrol'
+#    subprocess.call(['sh', 'dm_update_volt', filename], cwd=script_path)
+
+def update_voltage_2K(filename, serial):
+    '''
+    Interface with the modern BMC API. Load a voltage map
+    onto the 2K.
 
     Parameters:
         filename : str
-            Path to FITS file with 50x50 array of type uint16
+            Path to FITS file with 2040x1 array of type float32
     Returns:
         nothing
     '''
-    script_path = '/home/kvangorkom/dmcontrol'
-    subprocess.call(['sh', 'dm_update_volt', filename], cwd=script_path)
+    script_path = '/home/kvangorkom/BMC-interface'
+    subprocess.call(['sh', 'loadfits', filename, serial], cwd=script_path)
 
 def load_channel(fits_file, channel):
     '''
@@ -216,7 +232,7 @@ def write_fits(filename, data, dtype=np.float32, overwrite=False):
             This will be cast to a float32.
         dtype : np data type
             Displacement commands need to be
-            in float32. Volt commands need to
+            in float32. cacao dmvolt commands need to
             be in uint16.
         overwrite : bool, opt
             Overwrite the file if it already
@@ -234,7 +250,7 @@ def map_vector_to_square_2K(vector):
     data in a square array.
     Parameters:
         vector : array-like
-            2050-element DM input to be embedded
+            2040-element DM input to be embedded
             in 50x50 square array.
     Returns:
         array : nd array
@@ -256,7 +272,7 @@ def map_square_to_vector_2K(array):
             2D (50x50) array of DM inputs
     Returns:
         vector : nd array
-            2050-element input vector
+            2040-element input vector
     '''
     mask = bmc2k_mask()
     return array[mask]
