@@ -260,7 +260,7 @@ def map_vector_to_square_2K(vector):
             50x50 square array
     '''
     array = np.zeros((50,50))
-    mask = bmc2k_mask()
+    mask = mask_2K()
     array[mask] = vector
     return array
 
@@ -277,7 +277,7 @@ def map_square_to_vector_2K(array):
         vector : nd array
             2040-element input vector
     '''
-    mask = bmc2k_mask()
+    mask = mask_2K()
     return array[mask]
 
 def actuator_locations_array_2K():
