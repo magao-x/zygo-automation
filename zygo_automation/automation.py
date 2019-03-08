@@ -354,7 +354,7 @@ class ALPAOMonitor(FileMonitor):
         '''
         super().__init__(os.path.join(path, input_file))
         self.serial = serial
-        self.img = alpao.link_to_shmimage(serial)
+        #self.img = alpao.link_to_shmimage(serial)
 
     def on_new_data(self, newdata):
         '''
