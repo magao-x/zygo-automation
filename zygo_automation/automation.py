@@ -15,7 +15,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False, mtype='acquire'):
+def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False, mtype='acquire', input_name='dm_inputs.fits'):
     '''
     Loop over dm_inputs, setting the DM in the requested state,
     and taking measurements on the Zygo.
@@ -83,7 +83,7 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
                     os.remove(old_file)
             # Write out FITS file with requested DM input
             log.info('Setting DM to state {}/{}.'.format(idx + 1, len(dm_inputs)))
-            input_file = os.path.join(network_path,'dm_input.fits'.format(idx))
+            input_file = os.path.join(network_path,input_name)
             # write out
             if dmtype.upper() == 'ALPAO':
                 alpao.command_to_fits(inputs, input_file, overwrite=True)

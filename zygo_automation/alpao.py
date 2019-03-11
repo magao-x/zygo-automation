@@ -30,7 +30,7 @@ def apply_command(data, serial, img=None):
 
     Parameters:
         data : nd array
-            97 x 1 nd array of type float64
+            97 x 1 nd array of type float32
         serial : str
             DM serial number. Example: "BAX150"
         img : pyImageStreamIO.Image object
@@ -48,7 +48,7 @@ def apply_command(data, serial, img=None):
         img = shmio.Image()
         img.link(serial)
     #write to shared memory
-    img.write(data.astype(np.float64))
+    img.write(data.astype(np.float32))
 
 def apply_command_from_fits(filename, serial):
     '''
@@ -61,7 +61,7 @@ def apply_command_from_fits(filename, serial):
 
     Parameters:
         filename : str
-            Path to FITS file with 97 x 1 nd array of type float64
+            Path to FITS file with 97 x 1 nd array of type float32
         serial : str
             DM serial number. Example: "BAX150"
     Returns:
@@ -98,7 +98,7 @@ def command_to_fits(data, filename, overwrite=False):
     #add empty dimension to 1D arrays
     if np.ndim(data) == 1:
         data = np.expand_dims(data,1)
-    hdu = fits.PrimaryHDU(data.astype(np.float64))
+    hdu = fits.PrimaryHDU(data.astype(np.float32))
     hdu.writeto(filename, overwrite=overwrite)
 
 def set_single_actuator(n, value):
@@ -115,7 +115,7 @@ def set_single_actuator(n, value):
         inputs : nd array
             97 x 1 array of zeros except for poked actuator
     '''
-    inputs = np.zeros((97,), dtype=np.float64)
+    inputs = np.zeros((97,), dtype=np.float32)
     inputs[n-1] = value
     return inputs
 
