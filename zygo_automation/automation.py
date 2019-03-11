@@ -15,7 +15,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False, mtype='acquire', ctype='displacement'):
+def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False, mtype='acquire', input_name='dm_inputs.fits'):
     '''
     Loop over dm_inputs, setting the DM in the requested state,
     and taking measurements on the Zygo.
@@ -60,10 +60,6 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
             without analyzing or updating the GUI (faster), while
             'measure' takes a measurement, analyzes, and updates
             the GUI (slower).
-        ctype : str
-            'displacement' or 'voltage'. Relevant only for dmtype='BMC'.
-            Displacement commands are expected as float32, while voltages
-            are expected as uint16.
     Returns: nothing
 
     '''
@@ -87,15 +83,12 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
                     os.remove(old_file)
             # Write out FITS file with requested DM input
             log.info('Setting DM to state {}/{}.'.format(idx + 1, len(dm_inputs)))
-            input_file = os.path.join(network_path,'dm_input.fits'.format(idx))
+            input_file = os.path.join(network_path,input_name)
             # write out
             if dmtype.upper() == 'ALPAO':
                 alpao.command_to_fits(inputs, input_file, overwrite=True)
             else: #BMC
-                if ctype.upper() == 'DISPLACEMENT':
-                    write_fits(input_file, inputs, dtype=np.float32, overwrite=True)
-                else: #ctype == 'VOLTAGE' (a little dangerous to do it this way)
-                    write_fits(input_file, inputs, dtype=np.uint16, overwrite=True)
+                write_fits(input_file, inputs, dtype=np.float32, overwrite=True)
         else: #IRISAO
             input_file = os.path.join(network_path,'ptt_input.txt'.format(idx))
             write_ptt_command(inputs, input_file)
@@ -312,7 +305,7 @@ class BMC2KMonitor(FileMonitor):
     Will ignore the current file if it already exists
     when the monitor starts (until it's modified).
     '''
-    def __init__(self, path, input_file='dm_input.fits'):
+    def __init__(self, path, serial, input_file='dm_input.fits'):
         '''
         Parameters:
             path : str
@@ -320,6 +313,7 @@ class BMC2KMonitor(FileMonitor):
                 file.
         '''
         super().__init__(os.path.join(path, input_file))
+        self.serial = serial
 
     def on_new_data(self, newdata):
         '''
@@ -329,7 +323,7 @@ class BMC2KMonitor(FileMonitor):
         '''
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
-        update_voltage_2K(newdata)
+        update_voltage_2K(newdata, self.serial)
 
         # Write out empty file to tell Zygo the DM is ready.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
