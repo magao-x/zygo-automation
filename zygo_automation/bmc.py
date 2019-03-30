@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 #    script_path = '/home/kvangorkom/dmcontrol'
 #    subprocess.call(['sh', 'dm_update_volt', filename], cwd=script_path)
 
-def update_voltage_2K(filename, serial):
+def update_voltage_2K(filename, shm_name):
     '''
     Interface with the modern BMC API. Load a voltage map
     onto the 2K.
@@ -40,7 +40,7 @@ def update_voltage_2K(filename, serial):
         nothing
     '''
     script_path = '/home/kvangorkom/BMC-interface'
-    subprocess.call(['sh', 'loadfits', filename, serial], cwd=script_path)
+    subprocess.call(['sh', 'loadfits', filename, shm_name], cwd=script_path)
 
 def load_channel(fits_file, channel):
     '''
@@ -134,7 +134,7 @@ def set_row_column(idx, value, dim=0, xdim=32, ydim=32):
     return dm_image
 
 def influence_cube_2K(val):
-    return [set_pixel(0, i, val, xdim=1, ydim=2040) for i in range(2040)]
+    return [map_vector_to_square_2K(set_pixel(0, i, val, xdim=1, ydim=2040)[:,0]) for i in range(2040)]
 
 def test_inputs_pixel(xpix, ypix, val):
     '''
@@ -262,7 +262,7 @@ def map_vector_to_square_2K(vector):
     array = np.zeros((50,50))
     mask = mask_2K()
     array[mask] = vector
-    return array
+    return array.T[::-1,::-1]
 
 def map_square_to_vector_2K(array):
     '''
@@ -278,20 +278,20 @@ def map_square_to_vector_2K(array):
             2040-element input vector
     '''
     mask = mask_2K()
-    return array[mask]
+    return array[::-1,::-1].T[mask]
 
 def actuator_locations_array_2K():
     '''
     Generate an 50x50 array showing
     the DM locations and numbering scheme.
-    If plotted in matplotlib (origin='upper'),
+    If plotted in matplotlib (origin='lower'),
     this is consistent with the DM as seen
     from the Zygo.
     '''
     arr = map_vector_to_square(np.arange(1,2041))
     mask = bmc2k_mask()
     arr[~mask] = np.nan
-    return arr.T[:,::-1]
+    return arr.T[::-1,::-1]
 
 def mask_2K():
     mask = np.zeros((50,50), dtype=bool)

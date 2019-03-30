@@ -305,7 +305,7 @@ class BMC2KMonitor(FileMonitor):
     Will ignore the current file if it already exists
     when the monitor starts (until it's modified).
     '''
-    def __init__(self, path, serial, input_file='dm_input.fits'):
+    def __init__(self, path, shm_name, input_file='dm_input.fits'):
         '''
         Parameters:
             path : str
@@ -313,7 +313,7 @@ class BMC2KMonitor(FileMonitor):
                 file.
         '''
         super().__init__(os.path.join(path, input_file))
-        self.serial = serial
+        self.shm_name = shm_name
 
     def on_new_data(self, newdata):
         '''
@@ -323,7 +323,7 @@ class BMC2KMonitor(FileMonitor):
         '''
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new image file {}'.format(newdata))
-        update_voltage_2K(newdata, self.serial)
+        update_voltage_2K(newdata, self.shm_name)
 
         # Write out empty file to tell Zygo the DM is ready.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
