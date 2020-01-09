@@ -341,7 +341,7 @@ class IrisAOMonitor(FileMonitor):
     Will ignore the current file if it already exists
     when the monitor starts (until it's modified).
     '''
-    def __init__(self, path, input_file='ptt_input.txt'):
+    def __init__(self, path, mserial, input_file='ptt_input.txt'):
         '''
         Parameters:
             path : str
@@ -349,6 +349,7 @@ class IrisAOMonitor(FileMonitor):
                 file.
         '''
         super().__init__(os.path.join(path, input_file))
+        self.mserial = mserial
 
     def on_new_data(self, newdata):
         '''
@@ -358,7 +359,7 @@ class IrisAOMonitor(FileMonitor):
         '''
         # Load image from FITS file onto DM channel 0
         log.info('Setting DM from new PTT file {}'.format(newdata))
-        apply_ptt_command(newdata)
+        apply_ptt_command(newdata, mserial=self.mserial)
 
         # Write out empty file to tell Zygo the DM is ready.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
