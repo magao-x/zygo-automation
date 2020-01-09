@@ -5,10 +5,42 @@ import shutil
 
 from astropy.io import fits
 import numpy as np
+from skimage import draw
 
 import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
+
+
+# vestige of old API. Leaving for now.
+#def update_dmvolt_2K(filename):
+#    '''
+#
+#    Loads a fits file onto the dmvolt shared memory
+#    image on the 2K.
+#
+#    Parameters:
+#        filename : str
+#            Path to FITS file with 50x50 array of type uint16
+#    Returns:
+#        nothing
+#    '''
+#    script_path = '/home/kvangorkom/dmcontrol'
+#    subprocess.call(['sh', 'dm_update_volt', filename], cwd=script_path)
+
+def update_voltage_2K(filename, serial):
+    '''
+    Interface with the modern BMC API. Load a voltage map
+    onto the 2K.
+
+    Parameters:
+        filename : str
+            Path to FITS file with 2040x1 array of type float32
+    Returns:
+        nothing
+    '''
+    script_path = '/home/kvangorkom/BMC-interface'
+    subprocess.call(['sh', 'loadfits', filename, serial], cwd=script_path)
 
 def load_channel(fits_file, channel):
     '''
@@ -101,6 +133,9 @@ def set_row_column(idx, value, dim=0, xdim=32, ydim=32):
     
     return dm_image
 
+def influence_cube_2K(val):
+    return [set_pixel(0, i, val, xdim=1, ydim=2040) for i in range(2040)]
+
 def test_inputs_pixel(xpix, ypix, val):
     '''
     Generate a list of images looping over
@@ -119,7 +154,7 @@ def test_inputs_pixel(xpix, ypix, val):
     pixel_list = product(range(xpix), range(ypix), [val,] )
     image_list = []
     for pix in pixel_list:
-        image_list.append( set_pixel(*pix) )
+        image_list.append( set_pixel(xdim=xpix, ydim=ypix, *pix) )
     return image_list
 
 def test_inputs_row_column(num_cols, val, dim=0):
@@ -187,7 +222,7 @@ def mask_inputs(xdim, ydim, value):
 
     return image_list
 
-def write_fits(filename, data, overwrite=False):
+def write_fits(filename, data, dtype=np.float32, overwrite=False):
     '''
     Write data out as a FITS file, as expected
     by Olivier's DM scripts.
@@ -198,10 +233,68 @@ def write_fits(filename, data, overwrite=False):
         data : nd array
             Data to write in the FITS file.
             This will be cast to a float32.
+        dtype : np data type
+            Displacement commands need to be
+            in float32. cacao dmvolt commands need to
+            be in uint16.
         overwrite : bool, opt
             Overwrite the file if it already
             exists?
     Returns: nothing
     '''
-    hdu = fits.PrimaryHDU(data.astype(np.float32))
+    hdu = fits.PrimaryHDU(data.astype(dtype))
     hdu.writeto(filename, overwrite=overwrite)
+    
+
+def map_vector_to_square_2K(vector):
+    '''
+    Given the DM data values in a vector
+    ordered by actuator number, embed the
+    data in a square array.
+    Parameters:
+        vector : array-like
+            2040-element DM input to be embedded
+            in 50x50 square array.
+    Returns:
+        array : nd array
+            50x50 square array
+    '''
+    array = np.zeros((50,50))
+    mask = mask_2K()
+    array[mask] = vector
+    return array
+
+def map_square_to_vector_2K(array):
+    '''
+    Given the dm data values embedded
+    in a square (50x50) array, pull out
+    the actuator values in an properly ordered
+    vector.
+    Parameters:
+        array : nd array
+            2D (50x50) array of DM inputs
+    Returns:
+        vector : nd array
+            2040-element input vector
+    '''
+    mask = mask_2K()
+    return array[mask]
+
+def actuator_locations_array_2K():
+    '''
+    Generate an 50x50 array showing
+    the DM locations and numbering scheme.
+    If plotted in matplotlib (origin='upper'),
+    this is consistent with the DM as seen
+    from the Zygo.
+    '''
+    arr = map_vector_to_square(np.arange(1,2041))
+    mask = bmc2k_mask()
+    arr[~mask] = np.nan
+    return arr.T[:,::-1]
+
+def mask_2K():
+    mask = np.zeros((50,50), dtype=bool)
+    circmask = draw.circle(24.5,24.5,25.6,(50,50))
+    mask[circmask] = 1
+    return mask

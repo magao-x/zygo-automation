@@ -7,7 +7,7 @@ import numpy as np
 from astropy.io import fits
 
 from .zygo import capture_frame, read_many_raw_datx
-from .bmc import load_channel, write_fits
+from .bmc import load_channel, write_fits, update_voltage_2K
 from .irisao import write_ptt_command, apply_ptt_command
 from . import alpao
 
@@ -15,7 +15,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False, mtype='acquire'):
+def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidate=True, dry_run=False, clobber=False, mtype='acquire', input_name='dm_inputs.fits'):
     '''
     Loop over dm_inputs, setting the DM in the requested state,
     and taking measurements on the Zygo.
@@ -83,12 +83,12 @@ def zygo_dm_run(dm_inputs, network_path, outname, dmtype, delay=None, consolidat
                     os.remove(old_file)
             # Write out FITS file with requested DM input
             log.info('Setting DM to state {}/{}.'.format(idx + 1, len(dm_inputs)))
-            input_file = os.path.join(network_path,'dm_input.fits'.format(idx))
+            input_file = os.path.join(network_path,input_name)
             # write out
             if dmtype.upper() == 'ALPAO':
                 alpao.command_to_fits(inputs, input_file, overwrite=True)
             else: #BMC
-                write_fits(input_file, inputs, overwrite=True)
+                write_fits(input_file, inputs, dtype=np.float32, overwrite=True)
         else: #IRISAO
             input_file = os.path.join(network_path,'ptt_input.txt'.format(idx))
             write_ptt_command(inputs, input_file)
@@ -265,7 +265,7 @@ class ZygoMonitor(FileMonitor):
         os.remove(newdata) # delete DM ready file
         self.continue_monitoring = False # stop monitor loop
 
-class BMCMonitor(FileMonitor):
+class BMC1KMonitor(FileMonitor):
     '''
     Set the DM machine to watch a particular FITS files for
     a modification, indicating a request for a new DM actuation
@@ -296,6 +296,38 @@ class BMCMonitor(FileMonitor):
         # Write out empty file to tell Zygo the DM is ready.
         open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
 
+class BMC2KMonitor(FileMonitor):
+    '''
+    Set the DM machine to watch a particular FITS files for
+    a modification, indicating a request for a new DM actuation
+    state.
+
+    Will ignore the current file if it already exists
+    when the monitor starts (until it's modified).
+    '''
+    def __init__(self, path, serial, input_file='dm_input.fits'):
+        '''
+        Parameters:
+            path : str
+                Network path to watch for 'dm_input.fits'
+                file.
+        '''
+        super().__init__(os.path.join(path, input_file))
+        self.serial = serial
+
+    def on_new_data(self, newdata):
+        '''
+        On detecting an updated dm_input.fits file,
+        load the image onto the DM and write out an
+        empty 'dm_ready' file to the network path
+        '''
+        # Load image from FITS file onto DM channel 0
+        log.info('Setting DM from new image file {}'.format(newdata))
+        update_voltage_2K(newdata, self.serial)
+
+        # Write out empty file to tell Zygo the DM is ready.
+        open(os.path.join(os.path.dirname(self.file), 'dm_ready'), 'w').close()
+
 class ALPAOMonitor(FileMonitor):
     '''
     Set the DM machine to watch a particular FITS files for
@@ -316,7 +348,7 @@ class ALPAOMonitor(FileMonitor):
         '''
         super().__init__(os.path.join(path, input_file))
         self.serial = serial
-        self.img = alpao.link_to_shmimage(serial)
+        #self.img = alpao.link_to_shmimage(serial)
 
     def on_new_data(self, newdata):
         '''
