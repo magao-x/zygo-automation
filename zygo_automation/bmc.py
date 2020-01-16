@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 #    script_path = '/home/kvangorkom/dmcontrol'
 #    subprocess.call(['sh', 'dm_update_volt', filename], cwd=script_path)
 
-def update_voltage_2K(filename, serial):
+def update_voltage_2K(filename, serial, script_path='/home/kvangorkom/BMC-interface'):
     '''
     Interface with the modern BMC API. Load a voltage map
     onto the 2K.
@@ -39,7 +39,6 @@ def update_voltage_2K(filename, serial):
     Returns:
         nothing
     '''
-    script_path = '/home/kvangorkom/BMC-interface'
     subprocess.call(['sh', 'loadfits', filename, serial], cwd=script_path)
 
 def load_channel(fits_file, channel):
