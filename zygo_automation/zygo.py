@@ -132,7 +132,7 @@ def parse_raw_datx(filename, attrs_to_dict=True, mask_and_scale=False):
     assert 'Measurement' in list(h5file.keys()), 'No "Measurement" key found. Is this a raw .datx file?' 
     
     # Get surface and attributes
-    surface = h5file['Measurement']['Surface'].value
+    surface = np.asarray(h5file['Measurement']['Surface'])
     surface_attrs = h5file['Measurement']['Surface'].attrs
     # Define the mask from the "no data" key
     mask = np.ones_like(surface).astype(bool)
@@ -147,7 +147,7 @@ def parse_raw_datx(filename, attrs_to_dict=True, mask_and_scale=False):
     attrs = h5file['Measurement']['Attributes'].attrs
     
     # Get intensity map
-    intensity = h5file['Measurement']['Intensity'].value
+    intensity = np.asarray(h5file['Measurement']['Intensity'])
     intensity_attrs = h5file['Measurement']['Intensity'].attrs
 
     if attrs_to_dict:
